@@ -6,15 +6,15 @@ import api.listener.events.input.KeyPressEvent;
 import api.listener.events.input.MousePressEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
-import net.thederpgamer.betterbuilding.inventory.HotbarManager;
+import net.thederpgamer.betterbuilding.gui.BuildHotbar;
+import org.schema.game.common.data.player.PlayerState;
 import org.schema.schine.input.Keyboard;
 import org.schema.schine.input.KeyboardMappings;
-
 import java.io.IOException;
 
 /**
  * BetterBuilding.java
- * Main class for BetterBuilding StarMade mod.
+ * Main class for BetterBuilding StarMade mod
  * ==================================================
  * Created 1/21/2021
  * @author TheDerpGamer
@@ -22,11 +22,13 @@ import java.io.IOException;
 public class BetterBuilding extends StarMod {
 
     private static BetterBuilding instance;
-    public static void main(String[] args) { }
+
+    public static void main(String[] args) {
+    }
 
     //Data
-    private final String version = "0.1.0";
-    public HotbarManager hotbarManager;
+    private final String version = "0.1.3";
+    public BuildHotbar buildHotbar;
 
     public static BetterBuilding getInstance() {
         return instance;
@@ -34,20 +36,19 @@ public class BetterBuilding extends StarMod {
 
     @Override
     public void onGameStart() {
+        forceEnable = true;
         initialize();
     }
 
     @Override
     public void onEnable() {
-        hotbarManager = new HotbarManager();
-        registerOverwrites();
         registerListeners();
     }
 
     @Override
     public void onDisable() {
         try {
-            hotbarManager.saveToFile();
+            buildHotbar.saveToFile();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -61,32 +62,22 @@ public class BetterBuilding extends StarMod {
         setModVersion(version);
     }
 
-    private void registerOverwrites() {
-        overwriteClass(KeyboardMappings.class, false);
-    }
-
     private void registerListeners() {
         StarLoader.registerListener(MousePressEvent.class, new Listener<MousePressEvent>() {
             @Override
             public void onEvent(MousePressEvent event) {
-                if(GameClient.getClientPlayerState().isCreativeModeEnabled() && Keyboard.isKeyDown(KeyboardMappings.SWAP_CREATIVE_HOTBAR.getMapping())) {
-                    if(event.getScrollDirection() != 0) {
-                        short[] currentElements = new short[10];
-                        for(int i = 0; i < 10; i ++) {
-                            currentElements[i] = GameClient.getClientPlayerState().getInventory().getSlot(i).getType();
+                PlayerState playerState = GameClient.getClientPlayerState();
+                if (GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled() && Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping())) {
+                    if(buildHotbar == null) buildHotbar = new BuildHotbar(GameClient.getClientState(), playerState);
+                    if (event.getScrollDirection() != 0) {
+                        if (event.getScrollDirection() > 0) {
+                            buildHotbar.cycleNext();
+                        } else if (event.getScrollDirection() < 0) {
+                            buildHotbar.cyclePrevious();
+                        } else {
+                            return;
                         }
-                        hotbarManager.saveActive(currentElements);
-
-                        if(event.getScrollDirection() > 0) {
-                            hotbarManager.next();
-                        } else if(event.getScrollDirection() < 0) {
-                            hotbarManager.previous();
-                        }
-
-                        short[] newElements = hotbarManager.getElements();
-                        for(int i = 0; i < 10; i ++) {
-                            GameClient.getClientPlayerState().getInventory().getSlot(i).setType(newElements[i]);
-                        }
+                        event.setCanceled(true);
                     }
                 }
             }
@@ -95,23 +86,12 @@ public class BetterBuilding extends StarMod {
         StarLoader.registerListener(KeyPressEvent.class, new Listener<KeyPressEvent>() {
             @Override
             public void onEvent(KeyPressEvent event) {
-                if(GameClient.getClientPlayerState().isCreativeModeEnabled() && Keyboard.isKeyDown(KeyboardMappings.SWAP_CREATIVE_HOTBAR.getMapping())) {
+                PlayerState playerState = GameClient.getClientPlayerState();
+                if(GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled() && Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping())) {
+                    if(buildHotbar == null) buildHotbar = new BuildHotbar(GameClient.getClientState(), playerState);
                     if(event.getKey() >= 48 && event.getKey() <= 57) {
-                        short[] currentElements = new short[10];
-                        for(int i = 0; i < 10; i ++) {
-                            currentElements[i] = GameClient.getClientPlayerState().getInventory().getSlot(i).getType();
-                        }
-                        hotbarManager.saveActive(currentElements);
-
-                        int active = hotbarManager.activeHotbar;
-                        int num = Integer.parseInt(String.valueOf(event.getChar()));
-                        if(num != active) {
-                            hotbarManager.activeHotbar = num;
-                            short[] newElements = hotbarManager.getElements();
-                            for(int i = 0; i < 10; i ++) {
-                                GameClient.getClientPlayerState().getInventory().getSlot(i).setType(newElements[i]);
-                            }
-                        }
+                        buildHotbar.setActiveHotbar(event.getKey() - 48);
+                        event.setCanceled(true);
                     }
                 }
             }
