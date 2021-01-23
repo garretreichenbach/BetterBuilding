@@ -27,7 +27,7 @@ public class BetterBuilding extends StarMod {
     }
 
     //Data
-    private final String version = "0.1.3";
+    private final String version = "0.1.7";
     public BuildHotbar buildHotbar;
 
     public static BetterBuilding getInstance() {
@@ -67,17 +67,26 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(MousePressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if (GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled() && Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping())) {
-                    if(buildHotbar == null) buildHotbar = new BuildHotbar(GameClient.getClientState(), playerState);
-                    if (event.getScrollDirection() != 0) {
-                        if (event.getScrollDirection() > 0) {
+                if(GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                    if(buildHotbar == null) {
+                        (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
+                    }
+                    buildHotbar.hideHotbars = false;
+                    GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(buildHotbar);
+                    if(Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping()) && event.getScrollDirection() != 0) {
+                        if(event.getScrollDirection() > 0) {
                             buildHotbar.cycleNext();
-                        } else if (event.getScrollDirection() < 0) {
+                        } else if(event.getScrollDirection() < 0) {
                             buildHotbar.cyclePrevious();
                         } else {
                             return;
                         }
                         event.setCanceled(true);
+                    }
+                } else {
+                    if(buildHotbar != null) {
+                        buildHotbar.setActiveHotbar(1);
+                        buildHotbar.hideHotbars = true;
                     }
                 }
             }
@@ -87,11 +96,20 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(KeyPressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled() && Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping())) {
-                    if(buildHotbar == null) buildHotbar = new BuildHotbar(GameClient.getClientState(), playerState);
-                    if(event.getKey() >= 48 && event.getKey() <= 57) {
-                        buildHotbar.setActiveHotbar(event.getKey() - 48);
-                        event.setCanceled(true);
+                if(GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                    if(buildHotbar == null) {
+                        (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
+                    }
+                    buildHotbar.hideHotbars = false;
+                    GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(buildHotbar);
+                    if(Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping()) && event.getKey() >= 48 && event.getKey() <= 57) {
+                        //buildHotbar.setActiveHotbar(event.getKey() - 48);
+                        //event.setCanceled(true);
+                    }
+                } else {
+                    if(buildHotbar != null) {
+                        buildHotbar.setActiveHotbar(1);
+                        buildHotbar.hideHotbars = true;
                     }
                 }
             }

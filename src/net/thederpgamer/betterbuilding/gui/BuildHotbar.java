@@ -2,21 +2,15 @@ package net.thederpgamer.betterbuilding.gui;
 
 import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.util.GUIScale;
-import org.schema.common.util.linAlg.Vector4i;
-import org.schema.game.client.view.gui.HotbarInterface;
-import org.schema.game.client.view.gui.shiphud.newhud.GUIPosition;
-import org.schema.game.client.view.gui.shiphud.newhud.HudConfig;
-import org.schema.game.client.view.gui.weapon.WeaponSlotOverlayElement;
-import org.schema.game.common.data.player.PlayerState;
+import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
+import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
 import org.schema.game.common.data.player.inventory.Inventory;
 import org.schema.schine.graphicsengine.core.Controller;
-import org.schema.schine.graphicsengine.core.GlUtil;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.font.FontLibrary;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIInnerBackground;
 import org.schema.schine.input.InputState;
-import javax.vecmath.Vector2f;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,24 +23,26 @@ import java.util.Scanner;
  * Created 01/22/2021
  * @author TheDerpGamer
  */
-public class BuildHotbar extends HudConfig implements HotbarInterface {
+public class BuildHotbar extends BottomBarBuild {
 
     private Inventory inventory;
     private int activeHotbar;
     private short[][] hotbars;
     private File hotbarsFile;
 
+    public boolean hideHotbars;
     private GUITextOverlay barIndexText;
     private GUIAncor bgIndexAnchor;
     private GUIInnerBackground bgIndex;
     private GUIOverlay upButton;
     private GUIOverlay downButton;
 
-    public BuildHotbar(InputState inputState, PlayerState playerState) {
-        super(inputState);
-        inventory = playerState.getInventory();
+    public BuildHotbar(InputState inputState, InventoryPanelNew inventoryPanel) {
+        super(inputState, inventoryPanel);
+        inventory = inventoryPanel.getOwnPlayer().getInventory();
         activeHotbar = 0;
         hotbars = new short[10][10];
+        loadHotbars();
     }
 
     /**
@@ -55,9 +51,16 @@ public class BuildHotbar extends HudConfig implements HotbarInterface {
     public void saveActive() {
         short[] elements = new short[10];
         for(int i = 0; i < 10; i ++) {
-            elements[i] = inventory.getSlot(i).getType();
+            try {
+                elements[i] = inventory.getSlot(i).getType();
+            } catch (Exception ignored) { }
         }
         hotbars[activeHotbar] = elements;
+        try {
+            saveToFile();
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
     }
 
 
@@ -67,19 +70,19 @@ public class BuildHotbar extends HudConfig implements HotbarInterface {
     public void loadHotbars() {
         try {
             hotbarsFile = new File(BetterBuilding.getInstance().getResourcesFolder().getPath() + "/hotbars.smdat");
-            saveToFile();
-
-            Scanner scanner = new Scanner(hotbarsFile);
-            int j = 0;
-            while(scanner.hasNextLine() && j < 10) {
-                String line = scanner.nextLine();
-                String[] elements = line.split(",");
-                for(int i = 0; i < 10; i ++) {
-                    hotbars[j][i] = Short.parseShort(elements[i]);
+            if(hotbarsFile.exists()) {
+                Scanner scanner = new Scanner(hotbarsFile);
+                int j = 0;
+                while(scanner.hasNextLine() && j < 10) {
+                    String line = scanner.nextLine();
+                    String[] elements = line.split(",");
+                    for(int i = 0; i < 10; i ++) {
+                        hotbars[j][i] = Short.parseShort(elements[i]);
+                    }
+                    j ++;
                 }
-                j ++;
+                scanner.close();
             }
-            scanner.close();
         } catch (IOException exception) {
             exception.printStackTrace();
         }
@@ -115,7 +118,9 @@ public class BuildHotbar extends HudConfig implements HotbarInterface {
      */
     public void updateHotbar() {
         for(int i = 0; i < 10; i ++) {
-            inventory.getSlot(i).setType(getActive()[i]);
+            try {
+                inventory.getSlot(i).setType(getActive()[i]);
+            } catch (Exception ignored) { }
         }
         barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
     }
@@ -162,42 +167,8 @@ public class BuildHotbar extends HudConfig implements HotbarInterface {
     }
 
     @Override
-    public void activateDragging(boolean b) {
-
-    }
-
-    @Override
-    public void drawDragging(WeaponSlotOverlayElement weaponSlotOverlayElement) {
-
-    }
-
-    @Override
-    public Vector4i getConfigColor() {
-        return null;
-    }
-
-    @Override
-    public GUIPosition getConfigPosition() {
-        return null;
-    }
-
-    @Override
-    public Vector2f getConfigOffset() {
-        return null;
-    }
-
-    @Override
-    protected String getTag() {
-        return null;
-    }
-
-    @Override
-    public void drawToolTip() {
-
-    }
-
-    @Override
     public void onInit() {
+        super.onInit();
         barIndexText = new GUITextOverlay(10, 10, FontLibrary.FontSize.BIG, getState());
         barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
         barIndexText.setPos(GUIScale.S.defaultInset, GUIScale.S.scale(28), 0);
@@ -218,7 +189,6 @@ public class BuildHotbar extends HudConfig implements HotbarInterface {
 
         upButton.setPos(GUIScale.S.scale(1), 0, 0);
         downButton.setPos(GUIScale.S.scale(1), bgIndexAnchor.getHeight() - downButton.getHeight(), 0);
-
         upButton.setMouseUpdateEnabled(true);
         downButton.setMouseUpdateEnabled(true);
 
@@ -255,14 +225,26 @@ public class BuildHotbar extends HudConfig implements HotbarInterface {
         upButton.onInit();
         downButton.onInit();
         barIndexText.onInit();
+        doOrientation();
     }
 
     @Override
     public void draw() {
-        GlUtil.glPushMatrix();
-        bgIndexAnchor.getPos().x = getWidth() - GUIScale.S.scale(157);
-        bgIndexAnchor.getPos().y = GUIScale.S.scale(50);
-        bgIndexAnchor.draw();
-        GlUtil.glPopMatrix();
+        super.draw();
+        if(!hideHotbars) {
+            bgIndexAnchor.draw();
+        } else {
+            bgIndexAnchor.cleanUp();
+            bgIndex.cleanUp();
+        }
+    }
+
+    @Override
+    public void doOrientation() {
+        super.doOrientation();
+        orientate(GUIElement.ORIENTATION_HORIZONTAL_MIDDLE | GUIElement.ORIENTATION_BOTTOM);
+        bgIndexAnchor.orientate(GUIElement.ORIENTATION_BOTTOM);
+        bgIndexAnchor.getPos().x = getWidth() + 14;
+        bgIndexAnchor.getPos().y -= 1;
     }
 }
