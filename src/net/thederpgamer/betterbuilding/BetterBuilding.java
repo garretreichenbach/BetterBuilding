@@ -10,7 +10,6 @@ import net.thederpgamer.betterbuilding.gui.BuildHotbar;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.schine.input.Keyboard;
 import org.schema.schine.input.KeyboardMappings;
-import java.io.IOException;
 
 /**
  * BetterBuilding.java
@@ -43,15 +42,6 @@ public class BetterBuilding extends StarMod {
     @Override
     public void onEnable() {
         registerListeners();
-    }
-
-    @Override
-    public void onDisable() {
-        try {
-            buildHotbar.saveToFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private void initialize() {

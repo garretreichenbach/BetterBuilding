@@ -1,6 +1,5 @@
 package net.thederpgamer.betterbuilding.gui;
 
-import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.util.GUIScale;
 import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
 import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
@@ -11,10 +10,6 @@ import org.schema.schine.graphicsengine.forms.font.FontLibrary;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIInnerBackground;
 import org.schema.schine.input.InputState;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Scanner;
 
 /**
  * BuildHotbar.java
@@ -28,7 +23,6 @@ public class BuildHotbar extends BottomBarBuild {
     private Inventory inventory;
     private int activeHotbar;
     private short[][] hotbars;
-    private File hotbarsFile;
 
     public boolean hideHotbars;
     private GUITextOverlay barIndexText;
@@ -42,7 +36,6 @@ public class BuildHotbar extends BottomBarBuild {
         inventory = inventoryPanel.getOwnPlayer().getInventory();
         activeHotbar = 0;
         hotbars = new short[10][10];
-        loadHotbars();
     }
 
     /**
@@ -56,54 +49,6 @@ public class BuildHotbar extends BottomBarBuild {
             } catch (Exception ignored) { }
         }
         hotbars[activeHotbar] = elements;
-        try {
-            saveToFile();
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
-    }
-
-
-    /**
-     * Attempts to load hotbars from file
-     */
-    public void loadHotbars() {
-        try {
-            hotbarsFile = new File(BetterBuilding.getInstance().getResourcesFolder().getPath() + "/hotbars.smdat");
-            if(hotbarsFile.exists()) {
-                Scanner scanner = new Scanner(hotbarsFile);
-                int j = 0;
-                while(scanner.hasNextLine() && j < 10) {
-                    String line = scanner.nextLine();
-                    String[] elements = line.split(",");
-                    for(int i = 0; i < 10; i ++) {
-                        hotbars[j][i] = Short.parseShort(elements[i]);
-                    }
-                    j ++;
-                }
-                scanner.close();
-            }
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
-    }
-
-    /**
-     * Saves the current hotbars to file
-     */
-    public void saveToFile() throws IOException {
-        if(hotbarsFile.exists()) hotbarsFile.delete();
-        hotbarsFile.createNewFile();
-
-        FileWriter writer = new FileWriter(hotbarsFile);
-        for(int j = 0; j < 10; j ++) {
-            for(int i = 0; i < 10; i ++) {
-                writer.write(String.valueOf(hotbars[j][i]));
-                if(i != 9) writer.write(",");
-            }
-            if(j != 9) writer.write("\n");
-        }
-        writer.close();
     }
 
     /**
