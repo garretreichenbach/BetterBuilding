@@ -28,7 +28,7 @@ public class BetterBuilding extends StarMod {
     public static void main(String[] args) { }
 
     //Data
-    private final String version = "1.0.0";
+    private final String version = "1.0.1";
     public BuildHotbar buildHotbar;
 
     //Config
@@ -60,6 +60,7 @@ public class BetterBuilding extends StarMod {
         setModName("BetterBuilding");
         setModDescription("A small mod with helpful building tools and utilities.");
         setModAuthor("TheDerpGamer");
+        setSMDResourceId(8219);
         setModVersion(version);
     }
 
