@@ -1,5 +1,7 @@
 package net.thederpgamer.betterbuilding.gui;
 
+import api.utils.StarRunnable;
+import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.util.GUIScale;
 import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
 import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
@@ -10,6 +12,12 @@ import org.schema.schine.graphicsengine.forms.font.FontLibrary;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIInnerBackground;
 import org.schema.schine.input.InputState;
+import org.schema.schine.input.Keyboard;
+import javax.vecmath.Vector2f;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
 
 /**
  * BuildHotbar.java
@@ -22,20 +30,46 @@ public class BuildHotbar extends BottomBarBuild {
 
     private Inventory inventory;
     private int activeHotbar;
-    private short[][] hotbars;
+    private final short[][] hotbars;
 
     public boolean hideHotbars;
     private GUITextOverlay barIndexText;
-    private GUIAncor bgIndexAnchor;
+    public GUIAncor bgIndexAnchor;
     private GUIInnerBackground bgIndex;
     private GUIOverlay upButton;
     private GUIOverlay downButton;
+
+    private GUITextOverlay posText;
 
     public BuildHotbar(InputState inputState, InventoryPanelNew inventoryPanel) {
         super(inputState, inventoryPanel);
         inventory = inventoryPanel.getOwnPlayer().getInventory();
         activeHotbar = 0;
         hotbars = new short[10][10];
+    }
+
+    /**
+     * @return True if any number key is currently being pressed
+     */
+    public boolean anyNumberKeyDown() {
+        for(int i = 2; i < 12; i ++) {
+            if(Keyboard.isKeyDown(i)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Gets the hotbar number from the specified key
+     * If the key was not a number key, returns the current hotbar
+     * @param key The key to check
+     * @return The hotbar number
+     */
+    public int getHotbarNumber(int key) {
+        if(anyNumberKeyDown()) {
+            return key - 2;
+        } else {
+            return activeHotbar;
+        }
     }
 
     /**
@@ -64,7 +98,9 @@ public class BuildHotbar extends BottomBarBuild {
     public void updateHotbar() {
         for(int i = 0; i < 10; i ++) {
             try {
-                inventory.getSlot(i).setType(getActive()[i]);
+                inventory.getSlot(i).clear();
+                inventory.setSlot(i, getActive()[i], 1, -1);
+                inventory.getSlot(i).setInfinite(true);
             } catch (Exception ignored) { }
         }
         barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
@@ -99,16 +135,49 @@ public class BuildHotbar extends BottomBarBuild {
     /**
      * Sets the active hotbar to a specified slot
      */
-    public void setActiveHotbar(int num) {
-        int slot;
-        if(num == 0) {
-            slot = 9;
-        } else {
-            slot = num - 1;
-        }
+    public void setActiveHotbar(int slot) {
         saveActive();
         activeHotbar = slot;
         updateHotbar();
+    }
+
+    public void displayPosText() {
+        posText.setTextSimple("(" + bgIndexAnchor.getPos().x + ", " + bgIndexAnchor.getPos().y + ")");
+        posText.setVisibility(1);
+        posText.draw();
+        new StarRunnable(){
+            @Override
+            public void run() {
+                posText.setVisibility(2);
+                posText.cleanUp();
+            }
+        }.runLater(BetterBuilding.getInstance(), 25 * 5);
+    }
+
+    public void setSavedPos(Vector2f pos) throws IOException {
+        File posFile = new File(BetterBuilding.getInstance().getResourcesFolder().getPath() + "/savedPos.smdat");
+        if(posFile.exists()) posFile.delete();
+        posFile.createNewFile();
+        FileWriter writer = new FileWriter(posFile);
+        writer.write(pos.toString());
+        writer.close();
+    }
+
+    public Vector2f getSavedPos() throws IOException, NumberFormatException {
+        File posFile = new File(BetterBuilding.getInstance().getResourcesFolder().getPath() + "/savedPos.smdat");
+        if(!posFile.exists()) {
+            posFile.createNewFile();
+            FileWriter writer = new FileWriter(posFile);
+            writer.write(new Vector2f(getWidth() + 14, 1).toString());
+            writer.close();
+        }
+        Scanner scanner = new Scanner(posFile);
+        String line = scanner.nextLine();
+        scanner.close();
+        String[] coords = line.split(", ");
+        float x = Float.parseFloat(String.valueOf(coords[0].toCharArray()[1]));
+        float y = Float.parseFloat(String.valueOf(coords[1].toCharArray()[1]));
+        return new Vector2f(x, y);
     }
 
     @Override
@@ -174,6 +243,25 @@ public class BuildHotbar extends BottomBarBuild {
     }
 
     @Override
+    public void doOrientation() {
+        super.doOrientation();
+        try {
+            orientate(GUIElement.ORIENTATION_HORIZONTAL_MIDDLE | GUIElement.ORIENTATION_BOTTOM);
+            bgIndexAnchor.orientate(GUIElement.ORIENTATION_BOTTOM);
+            bgIndexAnchor.getPos().x = getSavedPos().x;
+            bgIndexAnchor.getPos().y = getSavedPos().y;
+
+            posText = new GUITextOverlay(10, 10, FontLibrary.FontSize.SMALL, getState());
+            posText.setPos(bgIndex.getPos().x + 15, bgIndexAnchor.getPos().y, 0);
+            posText.onInit();
+            posText.setVisibility(2);
+
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
+    }
+
+    @Override
     public void draw() {
         super.draw();
         if(!hideHotbars) {
@@ -182,14 +270,5 @@ public class BuildHotbar extends BottomBarBuild {
             bgIndexAnchor.cleanUp();
             bgIndex.cleanUp();
         }
-    }
-
-    @Override
-    public void doOrientation() {
-        super.doOrientation();
-        orientate(GUIElement.ORIENTATION_HORIZONTAL_MIDDLE | GUIElement.ORIENTATION_BOTTOM);
-        bgIndexAnchor.orientate(GUIElement.ORIENTATION_BOTTOM);
-        bgIndexAnchor.getPos().x = getWidth() + 14;
-        bgIndexAnchor.getPos().y -= 1;
     }
 }
