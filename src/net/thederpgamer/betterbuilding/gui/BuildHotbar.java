@@ -6,6 +6,7 @@ import net.thederpgamer.betterbuilding.util.GUIScale;
 import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
 import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
 import org.schema.game.common.data.player.inventory.Inventory;
+import org.schema.game.common.data.player.inventory.InventorySlot;
 import org.schema.schine.graphicsengine.core.Controller;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.font.FontLibrary;
@@ -14,10 +15,7 @@ import org.schema.schine.graphicsengine.forms.gui.newgui.GUIInnerBackground;
 import org.schema.schine.input.InputState;
 import org.schema.schine.input.Keyboard;
 import javax.vecmath.Vector2f;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Scanner;
 
 /**
  * BuildHotbar.java
@@ -30,7 +28,7 @@ public class BuildHotbar extends BottomBarBuild {
 
     private Inventory inventory;
     private int activeHotbar;
-    private final short[][] hotbars;
+    private final InventorySlot[][] hotbars;
 
     public boolean hideHotbars;
     private GUITextOverlay barIndexText;
@@ -38,14 +36,13 @@ public class BuildHotbar extends BottomBarBuild {
     private GUIInnerBackground bgIndex;
     private GUIOverlay upButton;
     private GUIOverlay downButton;
-
     private GUITextOverlay posText;
 
     public BuildHotbar(InputState inputState, InventoryPanelNew inventoryPanel) {
         super(inputState, inventoryPanel);
         inventory = inventoryPanel.getOwnPlayer().getInventory();
         activeHotbar = 0;
-        hotbars = new short[10][10];
+        hotbars = new InventorySlot[10][10];
     }
 
     /**
@@ -76,19 +73,15 @@ public class BuildHotbar extends BottomBarBuild {
      * Saves the active hotbar to slot
      */
     public void saveActive() {
-        short[] elements = new short[10];
         for(int i = 0; i < 10; i ++) {
-            try {
-                elements[i] = inventory.getSlot(i).getType();
-            } catch (Exception ignored) { }
+            hotbars[activeHotbar][i] = inventory.getMap().get(i);
         }
-        hotbars[activeHotbar] = elements;
     }
 
     /**
      * @return The active hotbar elements
      */
-    public short[] getActive() {
+    public InventorySlot[] getActive() {
         return hotbars[activeHotbar];
     }
 
@@ -97,11 +90,10 @@ public class BuildHotbar extends BottomBarBuild {
      */
     public void updateHotbar() {
         for(int i = 0; i < 10; i ++) {
-            try {
-                inventory.getSlot(i).clear();
-                inventory.setSlot(i, getActive()[i], 1, -1);
-                inventory.getSlot(i).setInfinite(true);
-            } catch (Exception ignored) { }
+            InventorySlot newSlot = getActive()[i];
+            if(newSlot == null) newSlot = new InventorySlot();
+            inventory.getMap().remove(i);
+            inventory.getMap().put(i, newSlot);
         }
         barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
     }
@@ -142,42 +134,20 @@ public class BuildHotbar extends BottomBarBuild {
     }
 
     public void displayPosText() {
-        posText.setTextSimple("(" + bgIndexAnchor.getPos().x + ", " + bgIndexAnchor.getPos().y + ")");
+        posText.setTextSimple("(" + (int) bgIndexAnchor.getPos().x + ", " + (int) bgIndexAnchor.getPos().y + ")");
         posText.setVisibility(1);
-        posText.draw();
         new StarRunnable(){
             @Override
             public void run() {
                 posText.setVisibility(2);
-                posText.cleanUp();
             }
         }.runLater(BetterBuilding.getInstance(), 25 * 5);
     }
 
     public void setSavedPos(Vector2f pos) throws IOException {
-        File posFile = new File(BetterBuilding.getInstance().getResourcesFolder().getPath() + "/savedPos.smdat");
-        if(posFile.exists()) posFile.delete();
-        posFile.createNewFile();
-        FileWriter writer = new FileWriter(posFile);
-        writer.write(pos.toString());
-        writer.close();
-    }
-
-    public Vector2f getSavedPos() throws IOException, NumberFormatException {
-        File posFile = new File(BetterBuilding.getInstance().getResourcesFolder().getPath() + "/savedPos.smdat");
-        if(!posFile.exists()) {
-            posFile.createNewFile();
-            FileWriter writer = new FileWriter(posFile);
-            writer.write(new Vector2f(getWidth() + 14, 1).toString());
-            writer.close();
-        }
-        Scanner scanner = new Scanner(posFile);
-        String line = scanner.nextLine();
-        scanner.close();
-        String[] coords = line.split(", ");
-        float x = Float.parseFloat(String.valueOf(coords[0].toCharArray()[1]));
-        float y = Float.parseFloat(String.valueOf(coords[1].toCharArray()[1]));
-        return new Vector2f(x, y);
+        BetterBuilding.getInstance().hotbarPos = pos;
+        BetterBuilding.getInstance().getConfig("config").set("hotbar-pos", (int) pos.x + ", " + (int) pos.y);
+        BetterBuilding.getInstance().getConfig("config").saveConfig();
     }
 
     @Override
@@ -192,7 +162,6 @@ public class BuildHotbar extends BottomBarBuild {
         bgIndexAnchor.attach(bgIndex);
         bgIndex.attach(barIndexText);
         String p = getState().getGUIPath();
-
         upButton = new GUIOverlay(Controller.getResLoader().getSprite(p + "UI 16px-8x8-gui-"), getState());
         downButton = new GUIOverlay(Controller.getResLoader().getSprite(p + "UI 16px-8x8-gui-"), getState());
 
@@ -200,6 +169,7 @@ public class BuildHotbar extends BottomBarBuild {
         downButton.setSpriteSubIndex(5);
         bgIndex.attach(upButton);
         bgIndex.attach(downButton);
+        attach(bgIndexAnchor);
 
         upButton.setPos(GUIScale.S.scale(1), 0, 0);
         downButton.setPos(GUIScale.S.scale(1), bgIndexAnchor.getHeight() - downButton.getHeight(), 0);
@@ -244,21 +214,15 @@ public class BuildHotbar extends BottomBarBuild {
 
     @Override
     public void doOrientation() {
-        super.doOrientation();
-        try {
-            orientate(GUIElement.ORIENTATION_HORIZONTAL_MIDDLE | GUIElement.ORIENTATION_BOTTOM);
-            bgIndexAnchor.orientate(GUIElement.ORIENTATION_BOTTOM);
-            bgIndexAnchor.getPos().x = getSavedPos().x;
-            bgIndexAnchor.getPos().y = getSavedPos().y;
+        orientate(GUIElement.ORIENTATION_HORIZONTAL_MIDDLE | GUIElement.ORIENTATION_BOTTOM);
+        bgIndexAnchor.orientate(GUIElement.ORIENTATION_BOTTOM);
+        bgIndexAnchor.getPos().x = BetterBuilding.getInstance().hotbarPos.x;
+        bgIndexAnchor.getPos().y = BetterBuilding.getInstance().hotbarPos.y;
 
-            posText = new GUITextOverlay(10, 10, FontLibrary.FontSize.SMALL, getState());
-            posText.setPos(bgIndex.getPos().x + 15, bgIndexAnchor.getPos().y, 0);
-            posText.onInit();
-            posText.setVisibility(2);
-
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
+        posText = new GUITextOverlay(10, 10, FontLibrary.FontSize.MEDIUM, getState());
+        posText.orientate(GUIElement.ORIENTATION_TOP | GUIElement.ORIENTATION_LEFT);
+        posText.onInit();
+        posText.setVisibility(2);
     }
 
     @Override
@@ -266,9 +230,15 @@ public class BuildHotbar extends BottomBarBuild {
         super.draw();
         if(!hideHotbars) {
             bgIndexAnchor.draw();
+            if(!posText.isInvisible()) {
+                posText.draw();
+            } else {
+                posText.cleanUp();
+            }
         } else {
             bgIndexAnchor.cleanUp();
             bgIndex.cleanUp();
+            posText.cleanUp();
         }
     }
 }

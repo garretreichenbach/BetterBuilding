@@ -6,6 +6,7 @@ import api.listener.events.input.KeyPressEvent;
 import api.listener.events.input.MousePressEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
+import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.schine.input.Keyboard;
@@ -24,12 +25,19 @@ public class BetterBuilding extends StarMod {
 
     private static BetterBuilding instance;
 
-    public static void main(String[] args) {
-    }
+    public static void main(String[] args) { }
 
     //Data
-    private final String version = "0.1.9";
+    private final String version = "1.0.0";
     public BuildHotbar buildHotbar;
+
+    //Config
+    private String[] defaultConfig = {
+            "debug-mode: false",
+            "hotbar-pos: 1038, 627"
+    };
+    public boolean debugMode = false;
+    public Vector2f hotbarPos = new Vector2f(1038, 627);
 
     public static BetterBuilding getInstance() {
         return instance;
@@ -43,6 +51,7 @@ public class BetterBuilding extends StarMod {
 
     @Override
     public void onEnable() {
+        loadConfig();
         registerListeners();
     }
 
@@ -54,12 +63,21 @@ public class BetterBuilding extends StarMod {
         setModVersion(version);
     }
 
+    private void loadConfig() {
+        FileConfiguration config = getConfig("config");
+        config.saveDefault(defaultConfig);
+
+        debugMode = config.getConfigurableBoolean("debug-mode", false);
+        String[] posString = config.getConfigurableValue("hotbar-pos", "1038, 627").split(", ");
+        hotbarPos = new Vector2f(Float.parseFloat(posString[0]), Float.parseFloat(posString[1]));
+    }
+
     private void registerListeners() {
         StarLoader.registerListener(MousePressEvent.class, new Listener<MousePressEvent>() {
             @Override
             public void onEvent(MousePressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(GameClient.getControlManager().isInAnyBuildMode() && playerState.isInfiniteInventoryVolume()) {
+                if(GameClient.getControlManager() != null && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
                     if(buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
@@ -88,17 +106,19 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(KeyPressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(GameClient.getControlManager().isInAnyBuildMode() && playerState.isInfiniteInventoryVolume()) {
+                if(GameClient.getControlManager() != null && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
                     if(buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
                     buildHotbar.hideHotbars = false;
                     GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(buildHotbar);
                     if(Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping())) {
-                        if(buildHotbar.anyNumberKeyDown() && !(Keyboard.isKeyDown(203) || Keyboard.isKeyDown(205) || Keyboard.isKeyDown(200) || Keyboard.isKeyDown(208))) {
+                        if(buildHotbar.anyNumberKeyDown() && !(Keyboard.isKeyDown(29) || Keyboard.isKeyDown(203) || Keyboard.isKeyDown(205) || Keyboard.isKeyDown(200) || Keyboard.isKeyDown(208))) {
                             buildHotbar.setActiveHotbar(buildHotbar.getHotbarNumber(event.getKey()));
                         } else if(Keyboard.isKeyDown(203)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
-                            buildHotbar.bgIndexAnchor.getPos().x -= 1;
+                            int offset = 1;
+                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            buildHotbar.bgIndexAnchor.getPos().x -= offset;
                             buildHotbar.displayPosText();
                             try {
                                 buildHotbar.setSavedPos(new Vector2f(buildHotbar.bgIndexAnchor.getPos().x, buildHotbar.bgIndexAnchor.getPos().y));
@@ -106,7 +126,9 @@ public class BetterBuilding extends StarMod {
                                 exception.printStackTrace();
                             }
                         } else if(Keyboard.isKeyDown(205)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
-                            buildHotbar.bgIndexAnchor.getPos().x += 1;
+                            int offset = 1;
+                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            buildHotbar.bgIndexAnchor.getPos().x += offset;
                             buildHotbar.displayPosText();
                             try {
                                 buildHotbar.setSavedPos(new Vector2f(buildHotbar.bgIndexAnchor.getPos().x, buildHotbar.bgIndexAnchor.getPos().y));
@@ -114,7 +136,9 @@ public class BetterBuilding extends StarMod {
                                 exception.printStackTrace();
                             }
                         } else if(Keyboard.isKeyDown(200)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
-                            buildHotbar.bgIndexAnchor.getPos().y += 1;
+                            int offset = 1;
+                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            buildHotbar.bgIndexAnchor.getPos().y -= offset;
                             buildHotbar.displayPosText();
                             try {
                                 buildHotbar.setSavedPos(new Vector2f(buildHotbar.bgIndexAnchor.getPos().x, buildHotbar.bgIndexAnchor.getPos().y));
@@ -122,7 +146,9 @@ public class BetterBuilding extends StarMod {
                                 exception.printStackTrace();
                             }
                         } else if(Keyboard.isKeyDown(208)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
-                            buildHotbar.bgIndexAnchor.getPos().y -= 1;
+                            int offset = 1;
+                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            buildHotbar.bgIndexAnchor.getPos().y += offset;
                             buildHotbar.displayPosText();
                             try {
                                 buildHotbar.setSavedPos(new Vector2f(buildHotbar.bgIndexAnchor.getPos().x, buildHotbar.bgIndexAnchor.getPos().y));
