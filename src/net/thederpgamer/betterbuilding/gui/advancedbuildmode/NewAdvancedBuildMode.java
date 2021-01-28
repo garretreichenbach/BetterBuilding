@@ -1,5 +1,6 @@
 package net.thederpgamer.betterbuilding.gui.advancedbuildmode;
 
+import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.NewAdvancedBuildModeSymmetry;
 import org.schema.game.client.data.GameClientState;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIGroup;
 import org.schema.game.client.view.gui.advancedbuildmode.*;

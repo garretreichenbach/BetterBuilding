@@ -11,6 +11,9 @@ import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.NewAdvancedBuildMode;
 import net.thederpgamer.betterbuilding.util.HotbarUtils;
+import org.schema.game.client.controller.manager.ingame.*;
+import org.schema.game.client.controller.manager.ingame.character.PlayerExternalController;
+import org.schema.game.common.controller.EditableSendableSegmentController;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.schine.input.Keyboard;
 import org.schema.schine.input.KeyboardMappings;
@@ -32,7 +35,7 @@ public class BetterBuilding extends StarMod {
     public static void main(String[] args) { }
 
     //Data
-    private final String version = "1.2.1";
+    private final String version = "1.2.2";
     public BuildHotbar buildHotbar;
     public boolean autoSaveTimerStarted = false;
     public int maxSymmetryPlanes = 5;
@@ -60,6 +63,7 @@ public class BetterBuilding extends StarMod {
     @Override
     public void onEnable() {
         loadConfig();
+        registerOverwrites();
         registerListeners();
         HotbarUtils.initialize();
     }
@@ -83,6 +87,16 @@ public class BetterBuilding extends StarMod {
         hotbarPos = new Vector2f(Float.parseFloat(posString[0]), Float.parseFloat(posString[1]));
         autoSaveInterval = config.getConfigurableInt("auto-save-interval", 3500);
         maxSymmetryPlanes = config.getConfigurableInt("max-symmetry-planes", 5);
+    }
+
+    private void registerOverwrites() {
+        overwriteClass(BuildSelection.class, false);
+        overwriteClass(BuildToolsManager.class, false);
+        overwriteClass(CopyArea.class, false);
+        overwriteClass(PlayerInteractionControlManager.class, false);
+        overwriteClass(SegmentBuildController.class, false);
+        overwriteClass(PlayerExternalController.class, false);
+        overwriteClass(EditableSendableSegmentController.class, false);
     }
 
     private void registerListeners() {
