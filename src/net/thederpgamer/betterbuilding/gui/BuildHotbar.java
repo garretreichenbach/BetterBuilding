@@ -1,19 +1,26 @@
 package net.thederpgamer.betterbuilding.gui;
 
+import api.common.GameClient;
 import api.utils.StarRunnable;
 import net.thederpgamer.betterbuilding.BetterBuilding;
+import net.thederpgamer.betterbuilding.inventory.HotbarData;
 import net.thederpgamer.betterbuilding.util.GUIScale;
+import net.thederpgamer.betterbuilding.util.HotbarUtils;
 import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
 import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
+import org.schema.game.client.view.gui.shiphud.newhud.HudContextHelpManager;
+import org.schema.game.client.view.gui.shiphud.newhud.HudContextHelperContainer;
 import org.schema.game.common.data.player.inventory.Inventory;
 import org.schema.game.common.data.player.inventory.InventorySlot;
 import org.schema.schine.graphicsengine.core.Controller;
 import org.schema.schine.graphicsengine.core.MouseEvent;
+import org.schema.schine.graphicsengine.core.settings.ContextFilter;
 import org.schema.schine.graphicsengine.forms.font.FontLibrary;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIInnerBackground;
 import org.schema.schine.input.InputState;
 import org.schema.schine.input.Keyboard;
+import org.schema.schine.input.KeyboardMappings;
 import javax.vecmath.Vector2f;
 import java.io.IOException;
 
@@ -26,10 +33,12 @@ import java.io.IOException;
  */
 public class BuildHotbar extends BottomBarBuild {
 
+    //Data
     private Inventory inventory;
     private int activeHotbar;
-    private final InventorySlot[][] hotbars;
+    private HotbarData[][] hotbars;
 
+    //GUI
     public boolean hideHotbars;
     private GUITextOverlay barIndexText;
     public GUIAncor bgIndexAnchor;
@@ -42,7 +51,7 @@ public class BuildHotbar extends BottomBarBuild {
         super(inputState, inventoryPanel);
         inventory = inventoryPanel.getOwnPlayer().getInventory();
         activeHotbar = 0;
-        hotbars = new InventorySlot[10][10];
+        hotbars = HotbarUtils.loadHotbars();
     }
 
     /**
@@ -74,14 +83,14 @@ public class BuildHotbar extends BottomBarBuild {
      */
     public void saveActive() {
         for(int i = 0; i < 10; i ++) {
-            hotbars[activeHotbar][i] = inventory.getMap().get(i);
+            hotbars[activeHotbar][i] = new HotbarData(inventory.getMap().get(i));
         }
     }
 
     /**
      * @return The active hotbar elements
      */
-    public InventorySlot[] getActive() {
+    public HotbarData[] getActive() {
         return hotbars[activeHotbar];
     }
 
@@ -90,8 +99,7 @@ public class BuildHotbar extends BottomBarBuild {
      */
     public void updateHotbar() {
         for(int i = 0; i < 10; i ++) {
-            InventorySlot newSlot = getActive()[i];
-            if(newSlot == null) newSlot = new InventorySlot();
+            InventorySlot newSlot = (getActive()[i] != null) ? getActive()[i].toInventorySlot() : new InventorySlot();
             inventory.getMap().remove(i);
             inventory.getMap().put(i, newSlot);
         }
@@ -133,10 +141,19 @@ public class BuildHotbar extends BottomBarBuild {
         updateHotbar();
     }
 
+    public void startAutoSaveTimer(int ticks) {
+        new StarRunnable() {
+            @Override
+            public void run() {
+                HotbarUtils.saveHotbars(hotbars);
+            }
+        }.runTimer(BetterBuilding.getInstance(), ticks);
+    }
+
     public void displayPosText() {
         posText.setTextSimple("(" + (int) bgIndexAnchor.getPos().x + ", " + (int) bgIndexAnchor.getPos().y + ")");
         posText.setVisibility(1);
-        new StarRunnable(){
+        new StarRunnable() {
             @Override
             public void run() {
                 posText.setVisibility(2);
@@ -148,6 +165,10 @@ public class BuildHotbar extends BottomBarBuild {
         BetterBuilding.getInstance().hotbarPos = pos;
         BetterBuilding.getInstance().getConfig("config").set("hotbar-pos", (int) pos.x + ", " + (int) pos.y);
         BetterBuilding.getInstance().getConfig("config").saveConfig();
+    }
+
+    private HudContextHelpManager getHudHelpManager() {
+        return GameClient.getClientState().getWorldDrawer().getGuiDrawer().getHud().getHelpManager();
     }
 
     @Override
@@ -209,11 +230,7 @@ public class BuildHotbar extends BottomBarBuild {
         upButton.onInit();
         downButton.onInit();
         barIndexText.onInit();
-        doOrientation();
-    }
 
-    @Override
-    public void doOrientation() {
         orientate(GUIElement.ORIENTATION_HORIZONTAL_MIDDLE | GUIElement.ORIENTATION_BOTTOM);
         bgIndexAnchor.orientate(GUIElement.ORIENTATION_BOTTOM);
         bgIndexAnchor.getPos().x = BetterBuilding.getInstance().hotbarPos.x;
@@ -223,6 +240,9 @@ public class BuildHotbar extends BottomBarBuild {
         posText.orientate(GUIElement.ORIENTATION_TOP | GUIElement.ORIENTATION_LEFT);
         posText.onInit();
         posText.setVisibility(2);
+
+        getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Number Key or Scroll] Change Hotbar", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
+        getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Arrow Key] Move Hotbar by 1 pixel\n[+ LShift (Optional)] Move by 30 pixels", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
     }
 
     @Override

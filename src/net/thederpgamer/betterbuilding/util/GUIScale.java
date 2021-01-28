@@ -2,7 +2,7 @@ package net.thederpgamer.betterbuilding.util;
 
 /**
  * GUIScale.java
- * <Description>
+ * GUI scaling utils
  * ==================================================
  * Created 01/22/2021
  * @author TheDerpGamer
