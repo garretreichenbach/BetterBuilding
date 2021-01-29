@@ -13,6 +13,7 @@ import net.thederpgamer.betterbuilding.gui.advancedbuildmode.NewAdvancedBuildMod
 import net.thederpgamer.betterbuilding.util.HotbarUtils;
 import org.schema.game.client.controller.manager.ingame.*;
 import org.schema.game.client.controller.manager.ingame.character.PlayerExternalController;
+import org.schema.game.client.view.BuildModeDrawer;
 import org.schema.game.common.controller.EditableSendableSegmentController;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.schine.input.Keyboard;
@@ -35,7 +36,7 @@ public class BetterBuilding extends StarMod {
     public static void main(String[] args) { }
 
     //Data
-    private final String version = "1.2.3";
+    private final String version = "1.2.4";
     public BuildHotbar buildHotbar;
     public boolean autoSaveTimerStarted = false;
     public int maxSymmetryPlanes = 5;
@@ -90,6 +91,7 @@ public class BetterBuilding extends StarMod {
     }
 
     private void registerOverwrites() {
+        overwriteClass(BuildModeDrawer.class, false);
         overwriteClass(BuildSelection.class, false);
         overwriteClass(BuildToolsManager.class, false);
         overwriteClass(CopyArea.class, false);
