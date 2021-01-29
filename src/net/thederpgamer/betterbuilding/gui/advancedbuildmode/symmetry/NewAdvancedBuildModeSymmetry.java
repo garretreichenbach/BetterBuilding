@@ -1,6 +1,7 @@
 package net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry;
 
 import net.thederpgamer.betterbuilding.BetterBuilding;
+import net.thederpgamer.betterbuilding.gui.Advanced2dButtonPane;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
 import org.schema.game.client.view.gui.advanced.tools.*;
 import org.schema.game.client.view.gui.advancedbuildmode.AdvancedBuildModeSymmetry;
@@ -9,7 +10,6 @@ import org.schema.schine.graphicsengine.forms.gui.GUIElement;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIContentPane;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIDockableDirtyInterface;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIHorizontalArea;
-import org.schema.schine.graphicsengine.forms.gui.newgui.GUIInnerTextbox;
 import java.util.ArrayList;
 
 /**
@@ -21,9 +21,7 @@ import java.util.ArrayList;
  */
 public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
-    private ArrayList<GUIInnerTextbox> xyBoxes = new ArrayList<>();
-    private ArrayList<GUIInnerTextbox> xzBoxes = new ArrayList<>();
-    private ArrayList<GUIInnerTextbox> yzBoxes = new ArrayList<>();
+    private ArrayList<Advanced2dButtonPane> buttonPanes;
 
     private ArrayList<SymmetryPlane> xyPlanes = new ArrayList<>();
     private ArrayList<SymmetryPlane> xzPlanes = new ArrayList<>();
@@ -36,14 +34,18 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
         super(guiElement);
     }
 
+    private int getRows() {
+        return Math.max(Math.max(xyPlanes.size(), xzPlanes.size()), yzPlanes.size());
+    }
+
     @Override
     public void build(final GUIContentPane contentPane, GUIDockableDirtyInterface dockableInterface) {
-        contentPane.setTextBoxHeightLast(70);
+        contentPane.setTextBoxHeightLast(80);
 
         addButton(contentPane.getContent(0), 0, 0, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.BLUE;
+                return GUIHorizontalArea.HButtonColor.YELLOW;
             }
 
             @Override
@@ -51,7 +53,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return new ButtonCallback() {
                     @Override
                     public void pressedLeftMouse() {
-                        if(xyPlanes.size() <= BetterBuilding.getInstance().maxSymmetryPlanes) addRow(xyPlanes.size(), contentPane.addNewTextBox(50), 0);
+                        if(getRows() < BetterBuilding.getInstance().maxSymmetryPlanes) addRow(getRows(), contentPane);
                     }
 
                     @Override
@@ -61,13 +63,13 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
             @Override
             public String getName() {
-                return "ADD XY";
+                return "ADD";
             }
         });
         addButton(contentPane.getContent(0), 1, 0, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.GREEN;
+                return GUIHorizontalArea.HButtonColor.ORANGE;
             }
 
             @Override
@@ -75,7 +77,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return new ButtonCallback() {
                     @Override
                     public void pressedLeftMouse() {
-                        if(xzPlanes.size() <= BetterBuilding.getInstance().maxSymmetryPlanes) addRow(xzPlanes.size(), contentPane.addNewTextBox(50), 1);
+                        if(getRows() > 1) removeRow(contentPane);
                     }
 
                     @Override
@@ -85,104 +87,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
             @Override
             public String getName() {
-                return "ADD XZ";
-            }
-        });
-        addButton(contentPane.getContent(0), 2, 0, new ButtonResult() {
-            @Override
-            public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.RED;
-            }
-
-            @Override
-            public ButtonCallback initCallback() {
-                return new ButtonCallback() {
-                    @Override
-                    public void pressedLeftMouse() {
-                        if(yzPlanes.size() <= BetterBuilding.getInstance().maxSymmetryPlanes) addRow(yzPlanes.size(), contentPane.addNewTextBox(50), 2);
-                    }
-
-                    @Override
-                    public void pressedRightMouse() { }
-                };
-            }
-
-            @Override
-            public String getName() {
-                return "ADD YZ";
-            }
-        });
-
-        addButton(contentPane.getContent(0), 0, 1, new ButtonResult() {
-            @Override
-            public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.BLUE;
-            }
-
-            @Override
-            public ButtonCallback initCallback() {
-                return new ButtonCallback() {
-                    @Override
-                    public void pressedLeftMouse() {
-                        if(xyPlanes.size() > 1) removeRow(0);
-                    }
-
-                    @Override
-                    public void pressedRightMouse() { }
-                };
-            }
-
-            @Override
-            public String getName() {
-                return "REMOVE XY";
-            }
-        });
-        addButton(contentPane.getContent(0), 1, 1, new ButtonResult() {
-            @Override
-            public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.GREEN;
-            }
-
-            @Override
-            public ButtonCallback initCallback() {
-                return new ButtonCallback() {
-                    @Override
-                    public void pressedLeftMouse() {
-                        if(xzPlanes.size() > 1) removeRow(1);
-                    }
-
-                    @Override
-                    public void pressedRightMouse() { }
-                };
-            }
-
-            @Override
-            public String getName() {
-                return "REMOVE XZ";
-            }
-        });
-        addButton(contentPane.getContent(0), 2, 1, new ButtonResult() {
-            @Override
-            public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.RED;
-            }
-
-            @Override
-            public ButtonCallback initCallback() {
-                return new ButtonCallback() {
-                    @Override
-                    public void pressedLeftMouse() {
-                        if(yzPlanes.size() > 1) removeRow(2);
-                    }
-
-                    @Override
-                    public void pressedRightMouse() { }
-                };
-            }
-
-            @Override
-            public String getName() {
-                return "REMOVE YZ";
+                return "REMOVE";
             }
         });
 
@@ -248,10 +153,8 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return Lng.str("Rotates non-cubic blocks on the other side of the plane\nto mirror the blocks you place");
             }
         });
-        GUIInnerTextbox textBox = contentPane.addNewTextBox(50);
-        addRow(0, textBox, 0);
-        addRow(0, textBox, 1);
-        addRow(0, textBox, 2);
+        buttonPanes = new ArrayList<>();
+        addRow(0, contentPane);
     }
 
     private ArrayList<SymmetryPlane> getAllPlanes() {
@@ -276,129 +179,126 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
         }
     }
 
-    private void addRow(final int index, GUIInnerTextbox textBox, int type) {
-        if(type == 0) {
-            xyBoxes.add(textBox);
-            addButton(textBox, 0, 0, new NewSymmetryResult(index, SymmetryMode.XY));
-            addButton(textBox, 0, 1, new ButtonResult() {
-                @Override
-                public GUIHorizontalArea.HButtonColor getColor() {
-                    return GUIHorizontalArea.HButtonColor.BLUE;
-                }
+    private void addRow(final int index, GUIContentPane contentPane) {
+        Advanced2dButtonPane buttonPane = new Advanced2dButtonPane(contentPane.addNewTextBox(52), 3, 2);
 
-                @Override
-                public ButtonCallback initCallback() {
-                    return new ButtonCallback() {
-                        @Override
-                        public void pressedLeftMouse() {
-                            int value = xyPlanes.get(index).getExtraDist();
-                            xyPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
-                        }
+        buttonPane.addButton(0, 0, new NewSymmetryResult(SymmetryMode.XY));
+        buttonPane.addButton(0, 1, new ButtonResult() {
+            @Override
+            public GUIHorizontalArea.HButtonColor getColor() {
+                return GUIHorizontalArea.HButtonColor.BLUE;
+            }
 
-                        @Override
-                        public void pressedRightMouse() {
-                        }
+            @Override
+            public ButtonCallback initCallback() {
+                return new ButtonCallback() {
+                    @Override
+                    public void pressedLeftMouse() {
+                        int value = xyPlanes.get(index).getExtraDist();
+                        xyPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
+                    }
 
-                    };
+                    @Override
+                    public void pressedRightMouse() {
+                    }
 
-                }
+                };
 
-                @Override
-                public String getName() {
-                    return Lng.str("XY [" + (index + 1) + "] ODD");
-                }
+            }
 
-                @Override
-                public boolean isHighlighted() {
-                    return xyPlanes.get(index).getExtraDist() == 1;
-                }
-            });
-        } else if(type == 1) {
-            xzBoxes.add(textBox);
-            addButton(textBox, 1, 0, new NewSymmetryResult(index, SymmetryMode.XZ));
-            addButton(textBox, 1, 1, new ButtonResult() {
-                @Override
-                public GUIHorizontalArea.HButtonColor getColor() {
-                    return GUIHorizontalArea.HButtonColor.GREEN;
-                }
+            @Override
+            public String getName() {
+                return Lng.str("XY [" + (index + 1) + "] ODD");
+            }
 
-                @Override
-                public ButtonCallback initCallback() {
-                    return new ButtonCallback() {
-                        @Override
-                        public void pressedLeftMouse() {
-                            int value = xzPlanes.get(index).getExtraDist();
-                            xzPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
-                        }
+            @Override
+            public boolean isHighlighted() {
+                return index < xyPlanes.size() && xyPlanes.get(index).getExtraDist() == 1;
+            }
+        });
 
-                        @Override
-                        public void pressedRightMouse() {
-                        }
+        buttonPane.addButton(1, 0, new NewSymmetryResult(SymmetryMode.XZ));
+        buttonPane.addButton(1, 1, new ButtonResult() {
+            @Override
+            public GUIHorizontalArea.HButtonColor getColor() {
+                return GUIHorizontalArea.HButtonColor.GREEN;
+            }
 
-                    };
+            @Override
+            public ButtonCallback initCallback() {
+                return new ButtonCallback() {
+                    @Override
+                    public void pressedLeftMouse() {
+                        int value = xzPlanes.get(index).getExtraDist();
+                        xzPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
+                    }
 
-                }
+                    @Override
+                    public void pressedRightMouse() {
+                    }
 
-                @Override
-                public String getName() {
-                    return Lng.str("XZ [" + (index + 1) + "] ODD");
-                }
+                };
 
-                @Override
-                public boolean isHighlighted() {
-                    return xzPlanes.get(index).getExtraDist() == 1;
-                }
-            });
-        } else if(type == 2) {
-            yzBoxes.add(textBox);
-            addButton(textBox, 2, 0, new NewSymmetryResult(index, SymmetryMode.YZ));
-            addButton(textBox, 2, 1, new ButtonResult() {
-                @Override
-                public GUIHorizontalArea.HButtonColor getColor() {
-                    return GUIHorizontalArea.HButtonColor.RED;
-                }
+            }
 
-                @Override
-                public ButtonCallback initCallback() {
-                    return new ButtonCallback() {
-                        @Override
-                        public void pressedLeftMouse() {
-                            int value = yzPlanes.get(index).getExtraDist();
-                            yzPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
-                        }
+            @Override
+            public String getName() {
+                return Lng.str("XZ [" + (index + 1) + "] ODD");
+            }
 
-                        @Override
-                        public void pressedRightMouse() {
-                        }
+            @Override
+            public boolean isHighlighted() {
+                return index < xzPlanes.size() && xzPlanes.get(index).getExtraDist() == 1;
+            }
+        });
 
-                    };
-                }
+        buttonPane.addButton(2, 0, new NewSymmetryResult(SymmetryMode.YZ));
+        buttonPane.addButton(2, 1, new ButtonResult() {
+            @Override
+            public GUIHorizontalArea.HButtonColor getColor() {
+                return GUIHorizontalArea.HButtonColor.RED;
+            }
 
-                @Override
-                public String getName() {
-                    return Lng.str("YZ [" + (index + 1) + "] ODD");
-                }
+            @Override
+            public ButtonCallback initCallback() {
+                return new ButtonCallback() {
+                    @Override
+                    public void pressedLeftMouse() {
+                        int value = yzPlanes.get(index).getExtraDist();
+                        yzPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
+                    }
 
-                @Override
-                public boolean isHighlighted() {
-                    return yzPlanes.get(index).getExtraDist() == 1;
-                }
-            });
-        }
+                    @Override
+                    public void pressedRightMouse() {
+                    }
 
+                };
+            }
+
+            @Override
+            public String getName() {
+                return Lng.str("YZ [" + (index + 1) + "] ODD");
+            }
+
+            @Override
+            public boolean isHighlighted() {
+                return index < yzPlanes.size() && yzPlanes.get(index).getExtraDist() == 1;
+            }
+        });
+
+        buttonPane.onInit();
+        buttonPanes.add(buttonPane);
     }
 
-    private void removeRow(int type) {
-        if(type == 0) {
-            removeElement(xyBoxes.get(xyBoxes.size() - 1), 0, xyBoxes.size());
-            xyPlanes.remove(xyPlanes.size() - 1);
-        } else if(type == 1) {
-            removeElement(xzBoxes.get(xzBoxes.size() - 1), 1, xzBoxes.size());
-            xzPlanes.remove(xzPlanes.size() - 1);
-        } else if(type == 2) {
-            removeElement(yzBoxes.get(yzBoxes.size() - 1), 2, yzBoxes.size());
-            yzPlanes.remove(yzPlanes.size() - 1);
-        }
+    private void removeRow(GUIContentPane contentPane) {
+        if(xyPlanes.size() == getRows()) xyPlanes.remove(getRows() - 1);
+        if(xzPlanes.size() == getRows()) xzPlanes.remove(getRows() - 1);
+        if(yzPlanes.size() == getRows()) yzPlanes.remove(getRows() - 1);
+
+        Advanced2dButtonPane buttonPane = buttonPanes.get(buttonPanes.size() - 1);
+        contentPane.getTextboxes().remove(contentPane.getTextboxes().top());
+        buttonPane.remove();
+        buttonPanes.remove(buttonPane);
     }
 
     @Override
@@ -410,14 +310,23 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
     private class NewSymmetryResult extends ButtonResult {
 
-        private final int index;
         private SymmetryMode symmetryMode;
         private SymmetryPlane symmetryPlane;
 
-        public NewSymmetryResult(int index, SymmetryMode symmetryMode) {
-            this.index = index;
+        public NewSymmetryResult(SymmetryMode symmetryMode) {
             this.symmetryMode = symmetryMode;
             this.symmetryPlane = new SymmetryPlane(symmetryMode);
+            switch (symmetryMode) {
+                case XY:
+                    xyPlanes.add(symmetryPlane);
+                    break;
+                case XZ:
+                    xzPlanes.add(symmetryPlane);
+                    break;
+                case YZ:
+                    yzPlanes.add(symmetryPlane);
+                    break;
+            }
         }
 
         @Override

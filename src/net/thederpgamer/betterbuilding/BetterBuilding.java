@@ -35,7 +35,7 @@ public class BetterBuilding extends StarMod {
     public static void main(String[] args) { }
 
     //Data
-    private final String version = "1.2.2";
+    private final String version = "1.2.3";
     public BuildHotbar buildHotbar;
     public boolean autoSaveTimerStarted = false;
     public int maxSymmetryPlanes = 5;
