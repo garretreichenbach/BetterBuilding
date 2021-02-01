@@ -33,7 +33,8 @@ public abstract class AdvancedBuildModeGUISGroup extends AdvancedGUIGroup {
     }
 
     public SymmetryPlanes getSymmetryPlanes() {
-        return null;
+        PlayerInteractionControlManager var1;
+        return (var1 = this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager()).getInShipControlManager().getShipControlManager().getSegmentBuildController().isTreeActive() ? var1.getInShipControlManager().getShipControlManager().getSegmentBuildController().getSymmetryPlanes() : var1.getSegmentControlManager().getSegmentBuildController().getSymmetryPlanes();
     }
 
     public GameClientState getState() {

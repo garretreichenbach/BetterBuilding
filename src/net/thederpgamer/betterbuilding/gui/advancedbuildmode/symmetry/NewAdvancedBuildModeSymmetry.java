@@ -1,12 +1,11 @@
-package org.schema.game.client.view.gui.advancedbuildmode;
+package net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry;
 
 import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.data.BuildData;
 import net.thederpgamer.betterbuilding.gui.Advanced2dButtonPane;
-import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryMode;
-import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
 import org.schema.game.client.view.gui.advanced.tools.*;
+import org.schema.game.client.view.gui.advancedbuildmode.AdvancedBuildModeSymmetry;
 import org.schema.schine.common.language.Lng;
 import org.schema.schine.graphicsengine.forms.gui.GUIElement;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIContentPane;
@@ -15,19 +14,20 @@ import org.schema.schine.graphicsengine.forms.gui.newgui.GUIHorizontalArea;
 import java.util.ArrayList;
 
 /**
- * AdvancedBuildModeSymmetry.java
+ * NewAdvancedBuildModeSymmetry.java
+ * Improved version of AdvancedBuildModeSymmetry that supports multiple planes of the same axis
  * ==================================================
- * Modified 02/01/2021 by TheDerpGamer
- * @author Schema
+ * Created 01/27/2021
+ * @author TheDerpGamer
  */
-public class AdvancedBuildModeSymmetry extends AdvancedBuildModeGUISGroup {
+public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
     private ArrayList<Advanced2dButtonPane> buttonPanes;
 
     private boolean mirrorCubic = true;
     private boolean mirrorNonCubic = true;
 
-    public AdvancedBuildModeSymmetry(AdvancedGUIElement guiElement) {
+    public NewAdvancedBuildModeSymmetry(AdvancedGUIElement guiElement) {
         super(guiElement);
     }
 
@@ -187,7 +187,7 @@ public class AdvancedBuildModeSymmetry extends AdvancedBuildModeGUISGroup {
     private void addRow(final int index, GUIContentPane contentPane) {
         Advanced2dButtonPane buttonPane = new Advanced2dButtonPane(contentPane.addNewTextBox(52), 3, 2);
 
-        buttonPane.addButton(0, 0, new SymmetryResult(SymmetryMode.XY));
+        buttonPane.addButton(0, 0, new NewSymmetryResult(SymmetryMode.XY));
         buttonPane.addButton(0, 1, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
@@ -222,7 +222,7 @@ public class AdvancedBuildModeSymmetry extends AdvancedBuildModeGUISGroup {
             }
         });
 
-        buttonPane.addButton(1, 0, new SymmetryResult(SymmetryMode.XZ));
+        buttonPane.addButton(1, 0, new NewSymmetryResult(SymmetryMode.XZ));
         buttonPane.addButton(1, 1, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
@@ -258,7 +258,7 @@ public class AdvancedBuildModeSymmetry extends AdvancedBuildModeGUISGroup {
         });
 
 
-        buttonPane.addButton(2, 0, new SymmetryResult(SymmetryMode.YZ));
+        buttonPane.addButton(2, 0, new NewSymmetryResult(SymmetryMode.YZ));
         buttonPane.addButton(2, 1, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
@@ -314,22 +314,12 @@ public class AdvancedBuildModeSymmetry extends AdvancedBuildModeGUISGroup {
         return button;
     }
 
-    @Override
-    public String getId() {
-        return "BSYMMETRY";
-    }
-
-    @Override
-    public String getTitle() {
-        return Lng.ORG_SCHEMA_GAME_CLIENT_VIEW_GUI_ADVANCEDBUILDMODE_ADVANCEDBUILDMODESYMMETRY_7;
-    }
-
-    private class SymmetryResult extends ButtonResult {
+    private class NewSymmetryResult extends ButtonResult {
 
         private SymmetryMode symmetryMode;
         private SymmetryPlane symmetryPlane;
 
-        public SymmetryResult(SymmetryMode symmetryMode) {
+        public NewSymmetryResult(SymmetryMode symmetryMode) {
             this.symmetryMode = symmetryMode;
             this.symmetryPlane = new SymmetryPlane(symmetryMode);
             switch (symmetryMode) {

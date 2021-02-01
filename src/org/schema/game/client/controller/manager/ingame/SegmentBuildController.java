@@ -278,7 +278,7 @@ public class SegmentBuildController extends AbstractBuildControlManager {
     }
 
     public SymmetryPlanes getSymmetryPlanes() {
-        return null;
+        return this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager().getSymmetryPlanes();
     }
 
     public void setPlaceMode(boolean placeMode) {
