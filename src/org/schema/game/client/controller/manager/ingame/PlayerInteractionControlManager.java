@@ -5,30 +5,18 @@ import api.mod.StarLoader;
 import com.bulletphysics.collision.dispatch.CollisionWorld.ClosestRayResultCallback;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.linearmath.Transform;
-import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-
-import java.util.*;
-import javax.vecmath.Matrix3f;
-import javax.vecmath.Vector3f;
-
 import net.thederpgamer.betterbuilding.data.BuildData;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryMode;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.common.FastMath;
 import org.schema.common.util.StringTools;
 import org.schema.common.util.linAlg.Vector3i;
-import org.schema.game.client.controller.PlayerContextHelpDialog;
-import org.schema.game.client.controller.PlayerGameOkCancelInput;
-import org.schema.game.client.controller.PlayerGameTextInput;
-import org.schema.game.client.controller.PlayerInput;
-import org.schema.game.client.controller.PlayerRaceInput;
-import org.schema.game.client.controller.PlayerTextAreaInput;
-import org.schema.game.client.controller.PlayerTransporterInput;
+import org.schema.game.client.controller.*;
 import org.schema.game.client.controller.element.world.ClientSegmentProvider;
 import org.schema.game.client.controller.manager.AbstractControlManager;
 import org.schema.game.client.controller.manager.ingame.character.PlayerExternalController;
@@ -49,28 +37,12 @@ import org.schema.game.client.view.gui.buildtools.BuildConstructionManager;
 import org.schema.game.client.view.gui.buildtools.GUIOrientationSettingElement;
 import org.schema.game.client.view.gui.reactor.ReactorTreeDialog;
 import org.schema.game.client.view.textbox.Replacements;
-import org.schema.game.common.controller.BlockNotBuildTooFast;
-import org.schema.game.common.controller.BlockedByDockedElementException;
-import org.schema.game.common.controller.DimensionFilter;
-import org.schema.game.common.controller.EditableSendableSegmentController;
-import org.schema.game.common.controller.ElementPositionBlockedException;
-import org.schema.game.common.controller.Planet;
-import org.schema.game.common.controller.PositionControl;
-import org.schema.game.common.controller.SegmentCollisionCheckerCallback;
-import org.schema.game.common.controller.SegmentController;
-import org.schema.game.common.controller.SendableSegmentProvider;
-import org.schema.game.common.controller.Ship;
+import org.schema.game.common.controller.*;
 import org.schema.game.common.controller.ai.AIGameConfiguration;
 import org.schema.game.common.controller.ai.AiInterfaceContainer;
 import org.schema.game.common.controller.ai.Types;
 import org.schema.game.common.controller.ai.UnloadedAiEntityException;
-import org.schema.game.common.controller.elements.LiftContainerInterface;
-import org.schema.game.common.controller.elements.ManagerContainer;
-import org.schema.game.common.controller.elements.ShieldAddOn;
-import org.schema.game.common.controller.elements.ShieldContainerInterface;
-import org.schema.game.common.controller.elements.ShieldLocal;
-import org.schema.game.common.controller.elements.TransporterModuleInterface;
-import org.schema.game.common.controller.elements.VoidElementManager;
+import org.schema.game.common.controller.elements.*;
 import org.schema.game.common.controller.elements.dockingBlock.DockingBlockCollectionManager;
 import org.schema.game.common.controller.elements.lift.LiftCollectionManager;
 import org.schema.game.common.controller.elements.power.PowerAddOn;
@@ -81,11 +53,7 @@ import org.schema.game.common.data.ManagedSegmentController;
 import org.schema.game.common.data.SegmentPiece;
 import org.schema.game.common.data.VoidUniqueSegmentPiece;
 import org.schema.game.common.data.blockeffects.config.StatusEffectType;
-import org.schema.game.common.data.element.BlockOrientation;
-import org.schema.game.common.data.element.Element;
-import org.schema.game.common.data.element.ElementCollection;
-import org.schema.game.common.data.element.ElementInformation;
-import org.schema.game.common.data.element.ElementKeyMap;
+import org.schema.game.common.data.element.*;
 import org.schema.game.common.data.physics.CubeRayCastResult;
 import org.schema.game.common.data.physics.PhysicsExt;
 import org.schema.game.common.data.player.PlayerControlledTransformableNotFound;
@@ -111,8 +79,8 @@ import org.schema.schine.graphicsengine.core.settings.EngineSettings;
 import org.schema.schine.graphicsengine.core.settings.PrefixNotFoundException;
 import org.schema.schine.graphicsengine.core.settings.StateParameterNotFoundException;
 import org.schema.schine.graphicsengine.forms.BoundingBox;
-import org.schema.schine.graphicsengine.forms.font.FontStyle;
 import org.schema.schine.graphicsengine.forms.font.FontLibrary.FontSize;
+import org.schema.schine.graphicsengine.forms.font.FontStyle;
 import org.schema.schine.graphicsengine.forms.gui.GUICallback;
 import org.schema.schine.graphicsengine.forms.gui.GUIElement;
 import org.schema.schine.graphicsengine.forms.gui.GUITextButton;
@@ -124,12 +92,13 @@ import org.schema.schine.input.Keyboard;
 import org.schema.schine.input.KeyboardMappings;
 import org.schema.schine.network.objects.Sendable;
 
-/**
- * PlayerInteractionControlManager.java
- * ==================================================
- * Modified 01/27/2021 by TheDerpGamer
- * @author Schema
- */
+import javax.vecmath.Matrix3f;
+import javax.vecmath.Vector3f;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 public class PlayerInteractionControlManager extends AbstractControlManager {
     public static final long MENU_DELAY_MS = 200L;
     private final List<BuildInstruction> undo = new ObjectArrayList(30);
@@ -666,11 +635,11 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
 
                         public boolean onInput(String var1x) {
                             try {
-                                Vector3i var3x = Vector3i.parseVector3iFree(var1x);
-                                this.getState().getPlayer().sendSimpleCommand(SimplePlayerCommands.SET_FREE_WARP_TARGET, new Object[]{var1.getSegmentController().getId(), var1.getAbsoluteIndex(), var3x.x, var3x.y, var3x.z});
+                                Vector3i var3 = Vector3i.parseVector3iFree(var1x);
+                                this.getState().getPlayer().sendSimpleCommand(SimplePlayerCommands.SET_FREE_WARP_TARGET, new Object[]{var1.getSegmentController().getId(), var1.getAbsoluteIndex(), var3.x, var3.y, var3.z});
                                 return true;
-                            } catch (Exception var3) {
-                                var3.printStackTrace();
+                            } catch (Exception var2) {
+                                var2.printStackTrace();
                                 this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_75, 0.0F);
                                 return false;
                             }
@@ -707,15 +676,15 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 return true;
             }
 
-            String var15;
             if (var1.getType() == 670) {
                 long var29 = var1.getAbsoluteIndexWithType4();
-                if ((var15 = (String)var1.getSegmentController().getTextMap().get(var29)) == null) {
+                String var27;
+                if ((var27 = (String)var1.getSegmentController().getTextMap().get(var29)) == null) {
                     ((ClientSegmentProvider)var1.getSegmentController().getSegmentProvider()).getSendableSegmentProvider().clientTextBlockRequest(var29);
-                    var15 = "";
+                    var27 = "";
                 }
 
-                (new PlayerGameTextInput("EDIT_LOGIC_NAME", this.getState(), 16, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_20, "", var15) {
+                (new PlayerGameTextInput("EDIT_LOGIC_NAME", this.getState(), 16, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_20, "", var27) {
                     public String[] getCommandPrefixes() {
                         return null;
                     }
@@ -891,6 +860,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
             }
 
             if (var1.getType() == 479) {
+                String var15;
                 if ((var15 = (String)var1.getSegment().getSegmentController().getTextMap().get(ElementCollection.getIndex4(var1.getAbsoluteIndex(), (short)var1.getOrientation()))) == null) {
                     var15 = "";
                 }
@@ -977,8 +947,10 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
     }
 
     private void checkMakeCustomOutput(SegmentPiece p) {
+        //INSERTED CODE @972
         SegmentPieceActivateByPlayer event = new SegmentPieceActivateByPlayer(p, this.getPlayerCharacterManager().getState().getPlayer(), this);
         StarLoader.fireEvent(event, false);
+        ///
         if (!this.getPlayerCharacterManager().canEnter(p.getType())) {
             System.err.println("[CLIENT] ACTIVATE BLOCK (std) " + p);
             PositionControl var2;
@@ -999,15 +971,18 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 long var4 = ElementCollection.getEncodeActivation(p, true, var6, false);
                 p.getSegment().getSegmentController().sendBlockActivation(var4);
             }
-        } else if (this.getPlayerCharacterManager().isActive()) {
-            if (!this.getPlayerCharacterManager().checkEnterAndEnterIfPossible(p)) {
-                this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_32, 0.0F);
-                return;
-            }
-        } else if (this.getInShipControlManager().isActive()) {
-            this.getInShipControlManager().exitShip(false);
-        }
 
+        } else {
+            if (this.getPlayerCharacterManager().isActive()) {
+                if (!this.getPlayerCharacterManager().checkEnterAndEnterIfPossible(p)) {
+                    this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_32, 0.0F);
+                    return;
+                }
+            } else if (this.getInShipControlManager().isActive()) {
+                this.getInShipControlManager().exitShip(false);
+            }
+
+        }
     }
 
     public SegmentControlManager getSegmentControlManager() {
@@ -1081,10 +1056,10 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                     this.stickyAdvBuildMode = false;
                 }
 
-                label98: {
+                label100: {
                     if (this.isInAnyStructureBuildMode()) {
                         if (!KeyboardMappings.getEventKeyState(var1, this.getState()) || !KeyboardMappings.BUILD_MODE_FIX_CAM.isEventKey(var1, this.getState())) {
-                            break label98;
+                            break label100;
                         }
 
                         if (!this.stickyAdvBuildMode) {
@@ -1094,7 +1069,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                                 System.err.println("[CLIENT] ACTIVATED STICKY MODE");
                                 this.stickyAdvBuildMode = true;
                             }
-                            break label98;
+                            break label100;
                         }
 
                         System.err.println("[CLIENT] DEACTIVATED STICKY MODE");
@@ -1162,90 +1137,91 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 if (this.getState().getController().getPlayerInputs().isEmpty()) {
                     super.handleKeyEvent(var1);
                 }
+
             }
         }
-
     }
 
     public void handleMouseEvent(MouseEvent var1) {
-        if (!this.getState().getWorldDrawer().getGuiDrawer().isMouseOnPanel() && !PlayerInput.isDelayedFromMainMenuDeactivation() && this.getState().getController().getPlayerInputs().size() <= 0 && System.currentTimeMillis() - this.getState().getController().getInputController().getLastDeactivatedMenu() >= 200L) {
-            if (var1.pressedMiddleMouse()) {
-                if (isAdvancedBuildMode(this.getState())) {
-                    this.switchHotbarWithLookAt();
-                } else {
-                    this.switchToLookAt();
-                }
-            } else {
-                boolean var2 = isAdvancedBuildMode(this.getState());
-                boolean var3 = this.getBuildToolsManager().getCopyArea() != null && this.getBuildToolsManager().isPasteMode();
-                if (!this.getBuildToolsManager().isInCreateDockingMode() && !var2 && !var3 && EngineSettings.S_ZOOM_MOUSEWHEEL.getCurrentState().equals("SLOTS") && !Keyboard.isKeyDown(KeyboardMappings.SCROLL_MOUSE_ZOOM.getMapping()) && !KeyboardMappings.PLAYER_LIST.isDown(this.getState())) {
-                    if (var1.dWheel != 0 && this.getForcedSelect() != 0) {
-                        this.forcedSelect = 0;
-                    }
-
-                    InventorySlot var4;
-                    if ((var4 = this.getState().getPlayer().getInventory().getSlot(this.selectedSlot)) != null && var4.isMultiSlot() && this.selectedSubSlot + (var1.dWheel > 0 ? 1 : 0) < var4.getSubSlots().size() && this.selectedSubSlot + (var1.dWheel < 0 ? -1 : 0) >= 0) {
-                        this.selectedSubSlot = FastMath.cyclicModulo(this.selectedSubSlot + (var1.dWheel > 0 ? 1 : (var1.dWheel < 0 ? -1 : 0)), var4.getSubSlots().size());
+        if (!this.getState().getWorldDrawer().getGuiDrawer().isMouseOnPanel() && !PlayerInput.isDelayedFromMainMenuDeactivation() && this.getState().getController().getPlayerInputs().size() <= 0) {
+            if (System.currentTimeMillis() - this.getState().getController().getInputController().getLastDeactivatedMenu() >= 200L) {
+                if (var1.pressedMiddleMouse()) {
+                    if (isAdvancedBuildMode(this.getState())) {
+                        this.switchHotbarWithLookAt();
                     } else {
-                        short[] var5;
-                        if (var4 != null && var4.getType() > 0 && ElementKeyMap.getInfoFast(var4.getType()).blocktypeIds != null && this.selectedSubSlot + (var1.dWheel > 0 ? 1 : 0) < this.getState().getBlockSyleSubSlotController().getSelectedStack(var4.getType()).length && this.selectedSubSlot + (var1.dWheel < 0 ? -1 : 0) >= 0) {
-                            var5 = this.getState().getBlockSyleSubSlotController().getSelectedStack(var4.getType());
-                            this.selectedSubSlot = FastMath.cyclicModulo(this.selectedSubSlot + (var1.dWheel > 0 ? 1 : (var1.dWheel < 0 ? -1 : 0)), var5.length);
-                        } else {
-                            if (EngineSettings.S_INVERT_MOUSEWHEEL_HOTBAR.isOn()) {
-                                this.selectedSlot = FastMath.cyclicModulo(this.selectedSlot + (var1.dWheel > 0 ? -1 : (var1.dWheel < 0 ? 1 : 0)), 10);
-                            } else {
-                                this.selectedSlot = FastMath.cyclicModulo(this.selectedSlot + (var1.dWheel > 0 ? 1 : (var1.dWheel < 0 ? -1 : 0)), 10);
-                            }
+                        this.switchToLookAt();
+                    }
+                } else {
+                    boolean var2 = isAdvancedBuildMode(this.getState());
+                    boolean var3 = this.getBuildToolsManager().getCopyArea() != null && this.getBuildToolsManager().isPasteMode();
+                    if (!this.getBuildToolsManager().isInCreateDockingMode() && !var2 && !var3 && EngineSettings.S_ZOOM_MOUSEWHEEL.getCurrentState().equals("SLOTS") && !Keyboard.isKeyDown(KeyboardMappings.SCROLL_MOUSE_ZOOM.getMapping()) && !KeyboardMappings.PLAYER_LIST.isDown(this.getState())) {
+                        if (var1.dWheel != 0 && this.getForcedSelect() != 0) {
+                            this.forcedSelect = 0;
+                        }
 
-                            var4 = this.getState().getPlayer().getInventory().getSlot(this.selectedSlot);
-                            this.selectedSubSlot = 0;
-                            if (var4 != null && var4.isMultiSlot()) {
-                                if (var1.dWheel < 0) {
-                                    this.selectedSubSlot = var4.getSubSlots().size() - 1;
-                                }
-                            } else if (var4 != null && var4.getType() > 0 && ElementKeyMap.getInfoFast(var4.getType()).blocktypeIds != null && var1.dWheel < 0) {
+                        InventorySlot var4;
+                        if ((var4 = this.getState().getPlayer().getInventory().getSlot(this.selectedSlot)) != null && var4.isMultiSlot() && this.selectedSubSlot + (var1.dWheel > 0 ? 1 : 0) < var4.getSubSlots().size() && this.selectedSubSlot + (var1.dWheel < 0 ? -1 : 0) >= 0) {
+                            this.selectedSubSlot = FastMath.cyclicModulo(this.selectedSubSlot + (var1.dWheel > 0 ? 1 : (var1.dWheel < 0 ? -1 : 0)), var4.getSubSlots().size());
+                        } else {
+                            short[] var5;
+                            if (var4 != null && var4.getType() > 0 && ElementKeyMap.getInfoFast(var4.getType()).blocktypeIds != null && this.selectedSubSlot + (var1.dWheel > 0 ? 1 : 0) < this.getState().getBlockSyleSubSlotController().getSelectedStack(var4.getType()).length && this.selectedSubSlot + (var1.dWheel < 0 ? -1 : 0) >= 0) {
                                 var5 = this.getState().getBlockSyleSubSlotController().getSelectedStack(var4.getType());
-                                this.selectedSubSlot = var5.length - 1;
+                                this.selectedSubSlot = FastMath.cyclicModulo(this.selectedSubSlot + (var1.dWheel > 0 ? 1 : (var1.dWheel < 0 ? -1 : 0)), var5.length);
+                            } else {
+                                if (EngineSettings.S_INVERT_MOUSEWHEEL_HOTBAR.isOn()) {
+                                    this.selectedSlot = FastMath.cyclicModulo(this.selectedSlot + (var1.dWheel > 0 ? -1 : (var1.dWheel < 0 ? 1 : 0)), 10);
+                                } else {
+                                    this.selectedSlot = FastMath.cyclicModulo(this.selectedSlot + (var1.dWheel > 0 ? 1 : (var1.dWheel < 0 ? -1 : 0)), 10);
+                                }
+
+                                var4 = this.getState().getPlayer().getInventory().getSlot(this.selectedSlot);
+                                this.selectedSubSlot = 0;
+                                if (var4 != null && var4.isMultiSlot()) {
+                                    if (var1.dWheel < 0) {
+                                        this.selectedSubSlot = var4.getSubSlots().size() - 1;
+                                    }
+                                } else if (var4 != null && var4.getType() > 0 && ElementKeyMap.getInfoFast(var4.getType()).blocktypeIds != null && var1.dWheel < 0) {
+                                    var5 = this.getState().getBlockSyleSubSlotController().getSelectedStack(var4.getType());
+                                    this.selectedSubSlot = var5.length - 1;
+                                }
+                            }
+                        }
+
+                        this.getState().getPlayer().setSelectedBuildSlot(this.selectedSlot);
+                        this.checkOrienationForNewSelectedSlot();
+                    }
+
+                    if (this.buildToolsManager.isSelectMode()) {
+                        this.buildToolsManager.getSelectMode().handleMouseEvent(this, var1);
+                    }
+
+                    if (var3) {
+                        new Matrix3f();
+                        if (var1.dWheel > 0) {
+                            System.err.println("[CLIENT] Rotating copy area +");
+                            if (KeyboardMappings.COPY_AREA_X_AXIS.isDown(this.getState())) {
+                                this.getBuildToolsManager().getCopyArea().rotate(1, 0, 0);
+                            } else if (KeyboardMappings.COPY_AREA_Z_AXIS.isDown(this.getState())) {
+                                this.getBuildToolsManager().getCopyArea().rotate(0, 0, 1);
+                            } else {
+                                this.getBuildToolsManager().getCopyArea().rotate(0, 1, 0);
+                            }
+                        } else if (var1.dWheel < 0) {
+                            System.err.println("[CLIENT] Rotating copy area -");
+                            if (KeyboardMappings.COPY_AREA_X_AXIS.isDown(this.getState())) {
+                                this.getBuildToolsManager().getCopyArea().rotate(-1, 0, 0);
+                            } else if (KeyboardMappings.COPY_AREA_Z_AXIS.isDown(this.getState())) {
+                                this.getBuildToolsManager().getCopyArea().rotate(0, 0, -1);
+                            } else {
+                                this.getBuildToolsManager().getCopyArea().rotate(0, -1, 0);
                             }
                         }
                     }
 
-                    this.getState().getPlayer().setSelectedBuildSlot(this.selectedSlot);
-                    this.checkOrienationForNewSelectedSlot();
+                    super.handleMouseEvent(var1);
                 }
-
-                if (this.buildToolsManager.isSelectMode()) {
-                    this.buildToolsManager.getSelectMode().handleMouseEvent(this, var1);
-                }
-
-                if (var3) {
-                    new Matrix3f();
-                    if (var1.dWheel > 0) {
-                        System.err.println("[CLIENT] Rotating copy area +");
-                        if (KeyboardMappings.COPY_AREA_X_AXIS.isDown(this.getState())) {
-                            this.getBuildToolsManager().getCopyArea().rotate(1, 0, 0);
-                        } else if (KeyboardMappings.COPY_AREA_Z_AXIS.isDown(this.getState())) {
-                            this.getBuildToolsManager().getCopyArea().rotate(0, 0, 1);
-                        } else {
-                            this.getBuildToolsManager().getCopyArea().rotate(0, 1, 0);
-                        }
-                    } else if (var1.dWheel < 0) {
-                        System.err.println("[CLIENT] Rotating copy area -");
-                        if (KeyboardMappings.COPY_AREA_X_AXIS.isDown(this.getState())) {
-                            this.getBuildToolsManager().getCopyArea().rotate(-1, 0, 0);
-                        } else if (KeyboardMappings.COPY_AREA_Z_AXIS.isDown(this.getState())) {
-                            this.getBuildToolsManager().getCopyArea().rotate(0, 0, -1);
-                        } else {
-                            this.getBuildToolsManager().getCopyArea().rotate(0, -1, 0);
-                        }
-                    }
-                }
-
-                super.handleMouseEvent(var1);
             }
         }
-
     }
 
     public void setSelectedSlotForced(int var1, short var2) {
@@ -1282,14 +1258,14 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
 
             var3.scale(100.0F);
             var2.add(var3);
-            ClosestRayResultCallback var11;
             CubeRayCastResult var6;
+            ClosestRayResultCallback var11;
             if ((var11 = ((PhysicsExt)this.getState().getPhysics()).testRayCollisionPoint(var1, var2, false, (SimpleTransformableSendableObject)null, (SegmentController)null, false, true, false)).hasHit() && var11 instanceof CubeRayCastResult && (var6 = (CubeRayCastResult)var11).getSegment() != null) {
                 SegmentPiece var7;
                 short var9 = (var7 = new SegmentPiece(var6.getSegment(), var6.getCubePos())).getType();
                 System.err.println("[CLIENT] looking at block type: " + var7.toString());
                 Inventory var8;
-                IntIterator var10 = (var8 = this.getState().getPlayer().getInventory()).getSlots().iterator();
+                Iterator var10 = (var8 = this.getState().getPlayer().getInventory()).getSlots().iterator();
 
                 while(var10.hasNext()) {
                     InventorySlot var5;
@@ -1299,8 +1275,8 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                     }
                 }
             }
-        }
 
+        }
     }
 
     private void switchToLookAt() {
@@ -1366,13 +1342,15 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
         }
 
         if (this.getState().getController().getPlayerInputs().isEmpty()) {
-            if (KeyboardMappings.OBJECT_VIEW_CAM.isDown(this.getState()) && (Controller.getCamera() == null || !(Controller.getCamera() instanceof ObjectViewerCamera))) {
+            if (!KeyboardMappings.OBJECT_VIEW_CAM.isDown(this.getState()) || Controller.getCamera() != null && Controller.getCamera() instanceof ObjectViewerCamera) {
+                if (!KeyboardMappings.OBJECT_VIEW_CAM.isDown(this.getState()) && this.lookCamera != null && Controller.getCamera() == this.lookCamera) {
+                    System.err.println("REVERTED CAMERA");
+                    Controller.setCamera(this.lastCamera);
+                }
+            } else {
                 this.lastCamera = Controller.getCamera();
                 this.lookCamera = new ObjectViewerCamera(this.getState(), new FixedViewer(this.getState().getCurrentPlayerObject()), this.getState().getCurrentPlayerObject());
                 Controller.setCamera(this.lookCamera);
-            } else if (!KeyboardMappings.OBJECT_VIEW_CAM.isDown(this.getState()) && this.lookCamera != null && Controller.getCamera() == this.lookCamera) {
-                System.err.println("REVERTED CAMERA");
-                Controller.setCamera(this.lastCamera);
             }
 
             if (KeyboardMappings.OBJECT_VIEW_CAM.isDown(this.getState()) && Keyboard.isKeyDown(2)) {
@@ -1474,21 +1452,20 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 if (var2 >= 0 && var2 < 5) {
                     try {
                         this.controlAI(var1);
-                    } catch (UnloadedAiEntityException var4) {
-                        var4.printStackTrace();
-                        this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_43 + var4.uid, 0.0F);
+                    } catch (UnloadedAiEntityException var3) {
+                        var3.printStackTrace();
+                        this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_43 + var3.uid, 0.0F);
                         this.selectedCrew = null;
                     }
                 } else {
                     this.selectedCrew = null;
                 }
-            } catch (StateParameterNotFoundException var5) {
+            } catch (StateParameterNotFoundException var4) {
+                var4.printStackTrace();
+            } catch (PlayerControlledTransformableNotFound var5) {
                 var5.printStackTrace();
-            } catch (PlayerControlledTransformableNotFound var6) {
-                var6.printStackTrace();
             }
         }
-
     }
 
     public void handleKeyOrientation(KeyEventInterface var1) {
@@ -1746,10 +1723,10 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 var5 = (SimpleTransformableSendableObject)this.getState().getLocalAndRemoteObjectContainer().getLocalObjects().get(var3);
                 this.setSelectedEntity(var5);
             }
+
         } else {
             this.selectEntityMax(var1);
         }
-
     }
 
     private void selectEntityMax(int var1) {
@@ -1792,7 +1769,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
             float var10 = -1.0F;
             SimpleTransformableSendableObject var11 = null;
             Vector3f var12 = var6.getMiddleOfScreen(new Vector3f());
-            ObjectIterator var13 = var0.getCurrentSectorEntities().values().iterator();
+            Iterator var13 = var0.getCurrentSectorEntities().values().iterator();
 
             while(true) {
                 SimpleTransformableSendableObject var14;
@@ -1855,7 +1832,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
         }
 
         SimpleTransformableSendableObject var4 = null;
-        ObjectIterator var5 = this.getState().getCurrentSectorEntities().values().iterator();
+        Iterator var5 = this.getState().getCurrentSectorEntities().values().iterator();
 
         while(true) {
             SimpleTransformableSendableObject var6;
@@ -1922,6 +1899,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 while(this.redo.size() > (Integer)EngineSettings.B_UNDO_REDO_MAX.getCurrentState()) {
                     this.redo.remove(this.redo.size() - 1);
                 }
+
             } else {
                 if (this.undoRedoCooldown >= 0.0F) {
                     this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_78);
@@ -1933,7 +1911,6 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
             System.err.println("ERROR IN REDO");
             var3.printStackTrace();
         }
-
     }
 
     public void redo() {
@@ -1951,11 +1928,11 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                     this.undo.remove(this.undo.size() - 1);
                 }
             }
+
         } catch (Exception var3) {
             System.err.println("ERROR IN REDO");
             var3.printStackTrace();
         }
-
     }
 
     public boolean isUndoRedoOnCooldown() {
@@ -2003,7 +1980,6 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
         } else {
             this.getSegmentControlManager().getSegmentBuildController().setSelectedBlock(var1);
         }
-
     }
 
     public SegmentPiece getSelectedBlockByActiveController() {
@@ -2119,7 +2095,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
             }
         }
 
-        ObjectIterator var8 = var3.iterator();
+        Iterator var8 = var3.iterator();
 
         while(var8.hasNext()) {
             Segment var9;
