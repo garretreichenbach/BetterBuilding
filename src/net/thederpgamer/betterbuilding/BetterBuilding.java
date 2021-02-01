@@ -67,11 +67,11 @@ public class BetterBuilding extends StarMod {
 
     @Override
     public byte[] onClassTransform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] byteCode) {
-        if(className.endsWith("BuildModeDrawer.class") || className.endsWith("BuildSelection.class") ||
-        className.endsWith("CopyArea.class") || className.endsWith("SegmentBuildController.class") ||
-        className.endsWith("PlayerExternalController.class") || className.endsWith("PlayerInteractionControlManager.class") ||
-        className.endsWith("EditableSendableSegmentController.class")) {
-            return super.onClassTransform(loader, className, classBeingRedefined, protectionDomain, overwriteClass(classBeingRedefined, byteCode));
+        if(className.endsWith("BuildModeDrawer") || className.endsWith("BuildSelection") ||
+            className.endsWith("CopyArea") || className.endsWith("SegmentBuildController") ||
+            className.endsWith("PlayerExternalController") || className.endsWith("PlayerInteractionControlManager") ||
+            className.endsWith("EditableSendableSegmentController")) {
+            return overwriteClass(className, byteCode);
         } else {
             return super.onClassTransform(loader, className, classBeingRedefined, protectionDomain, byteCode);
         }
@@ -211,15 +211,14 @@ public class BetterBuilding extends StarMod {
         }, this);
     }
 
-    private byte[] overwriteClass(Class<?> classBeingRedefined, byte[] byteCode) {
-        String name = classBeingRedefined.getSimpleName();
+    private byte[] overwriteClass(String className, byte[] byteCode) {
         byte[] bytes = null;
         try {
             ZipInputStream file = new ZipInputStream(new FileInputStream(this.getSkeleton().getJarFile()));
             while(true) {
                 ZipEntry nextEntry = file.getNextEntry();
                 if(nextEntry == null) break;
-                if(nextEntry.getName().contains(name)){
+                if(nextEntry.getName().endsWith(className + ".class")){
                     bytes = IOUtils.toByteArray(file);
                 }
             }
@@ -228,7 +227,7 @@ public class BetterBuilding extends StarMod {
             e.printStackTrace();
         }
         if(bytes != null) {
-            System.err.println("[BetterBuilding] Overwrote Class: " + name);
+            System.err.println("[BetterBuilding] Overwrote Class: " + className);
             return bytes;
         } else {
             return byteCode;
