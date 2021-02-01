@@ -4,6 +4,7 @@
     <root id="root">
       <element id="archive" name="BetterBuilding.jar">
         <element id="module-output" name="BetterBuilding" />
+        <element id="file-copy" path="$PROJECT_DIR$/src/mod.json" />
       </element>
     </root>
   </artifact>

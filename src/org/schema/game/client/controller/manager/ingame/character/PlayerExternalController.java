@@ -159,11 +159,11 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                                         }
 
                                     }
-                                }, new DimensionFilter(), this.getAllSymmetryPlanes(), 6.0F);
+                                }, new DimensionFilter(), null, 6.0F);
                                 return;
                             }
 
-                            this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().removeBlock((EditableSendableSegmentController)var7.getSegment().getSegmentController(), var8, var5, this.selectedBlock, 6.0F, this.getAllSymmetryPlanes(), (short)1, new RemoveCallback() {
+                            this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().removeBlock((EditableSendableSegmentController)var7.getSegment().getSegmentController(), var8, var5, this.selectedBlock, 6.0F, null, (short)1, new RemoveCallback() {
                                 public long getSelectedControllerPos() {
                                     return PlayerExternalController.this.selectedBlock != null ? PlayerExternalController.this.selectedBlock.getAbsoluteIndex() : -9223372036854775808L;
                                 }

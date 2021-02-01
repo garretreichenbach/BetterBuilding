@@ -14,6 +14,7 @@ import java.util.Iterator;
 import javax.vecmath.Matrix4f;
 import javax.vecmath.Vector3f;
 
+import net.thederpgamer.betterbuilding.data.BuildData;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.common.FastMath;
 import org.schema.common.util.StringTools;
@@ -260,24 +261,20 @@ public class SegmentBuildController extends AbstractBuildControlManager {
         return this.selectedBlock;
     }
 
-    public ArrayList<SymmetryPlane> getXyPlanes() {
-        return this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager().getXyPlanes();
+    public ArrayList<SymmetryPlane> getXYPlanes() {
+        return BuildData.xyPlanes;
     }
 
-    public ArrayList<SymmetryPlane> getXzPlanes() {
-        return this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager().getXzPlanes();
+    public ArrayList<SymmetryPlane> getXZPlanes() {
+        return BuildData.xzPlanes;
     }
 
-    public ArrayList<SymmetryPlane> getYzPlanes() {
-        return this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager().getYzPlanes();
+    public ArrayList<SymmetryPlane> getYZPlanes() {
+        return BuildData.yzPlanes;
     }
 
     public ArrayList<SymmetryPlane> getAllSymmetryPlanes() {
-        ArrayList<SymmetryPlane> allPlanes = new ArrayList<>();
-        allPlanes.addAll(getXyPlanes());
-        allPlanes.addAll(getXzPlanes());
-        allPlanes.addAll(getYzPlanes());
-        return allPlanes;
+        return BuildData.getAllPlanes();
     }
 
     public void setPlaceMode(boolean placeMode) {
@@ -450,7 +447,7 @@ public class SegmentBuildController extends AbstractBuildControlManager {
         }
 
         var2.normalize();
-        this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().removeBlock(this.edit.getSegmentController(), var3, var2, this.selectedBlock, 300.0F, this.getAllSymmetryPlanes(), (short)32767, new RemoveCallback() {
+        this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().removeBlock(this.edit.getSegmentController(), var3, var2, this.selectedBlock, 300.0F, null, (short)32767, new RemoveCallback() {
             public long getSelectedControllerPos() {
                 return SegmentBuildController.this.selectedBlock != null ? SegmentBuildController.this.selectedBlock.getAbsoluteIndex() : -9223372036854775808L;
             }
@@ -512,7 +509,7 @@ public class SegmentBuildController extends AbstractBuildControlManager {
                     }
 
                 }
-            }, new DimensionFilter(), this.getAllSymmetryPlanes(), 300.0F);
+            }, new DimensionFilter(), null, 300.0F);
         }
 
     }

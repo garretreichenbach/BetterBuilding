@@ -16,6 +16,7 @@ import java.util.*;
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector3f;
 
+import net.thederpgamer.betterbuilding.data.BuildData;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryMode;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.common.FastMath;
@@ -181,21 +182,21 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
 
     }
 
-    public boolean checkCanBuild(final EditableSendableSegmentController var1, SymmetryPlane var2, short var3) {
+    public short checkCanBuild(final EditableSendableSegmentController var1, SymmetryPlanes var2, short var3) {
         if (!this.getState().getController().allowedToEdit(var1)) {
-            return false;
+            return 0;
         } else if (var1.isInTestSector()) {
             this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_65, 0.0F);
-            return false;
+            return 0;
         } else if (!this.isAllowedToBuildAndSpawnShips()) {
             this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_0, 0.0F);
-            return false;
+            return 0;
         } else if (this.getState().getController().getTutorialMode() == null || !(this.getState().getController().getTutorialMode().getMachine().getFsm().getCurrentState() instanceof PlaceElementOnLastSpawnedTestState) || var3 != 16 || this.getInShipControlManager().getShipControlManager().getSegmentBuildController().getSelectedBlock() != null && this.getInShipControlManager().getShipControlManager().getSegmentBuildController().getSelectedBlock().getType() == 6) {
             this.stacked = false;
             if (var3 == -32768) {
                 List var4;
                 if ((var4 = this.getState().getPlayer().getInventory().getSubSlots(this.getSelectedSlot())) == null || var4.isEmpty()) {
-                    return false;
+                    return 0;
                 }
 
                 var3 = ((InventorySlot)var4.get(this.getSelectedSubSlot() % var4.size())).getType();
@@ -213,24 +214,24 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 if (var10 < 0) {
                     System.err.println("[CLIENT] POPUP RADIAL");
                     this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().checkRadialSelect(var3);
-                    return false;
+                    return 0;
                 }
 
                 var3 = var10;
             }
 
-            if (var3 < 0 && !var2.inPlaceMode()) {
+            if (var3 < 0 && !BuildData.currentPlane.inPlaceMode()) {
                 this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_2, 0.0F);
-                return false;
+                return 0;
             } else if (var1.getHpController().isRebooting()) {
                 this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_3, new Object[]{StringTools.formatTimeFromMS(var1.getHpController().getRebootTimeLeftMS())}), 0.0F);
-                return false;
+                return 0;
             } else {
                 if (var1.isScrap()) {
                     this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_10, 0.0F);
                     if (this.firstWarning) {
                         this.firstWarning = false;
-                        return false;
+                        return 0;
                     }
                 }
 
@@ -256,7 +257,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                         var14.activate();
                     }
 
-                    return true;
+                    return var3;
                 } else {
                     if (this.buildToolsManager.getBuildToolCreateDocking().potentialCreateDockPos != null) {
                         if (this.buildToolsManager.getBuildToolCreateDocking().docker == null) {
@@ -264,7 +265,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                             ElementInformation var7 = ElementKeyMap.getInfoFast((var12 = this.buildToolsManager.getBuildToolCreateDocking().potentialCreateDockPos).getType());
                             this.buildToolsManager.getBuildToolCreateDocking().rail = new VoidUniqueSegmentPiece(var12);
                             Oriencube var9;
-                            Oriencube var11 = (var9 = (Oriencube)BlockShapeAlgorithm.getAlgo(var7.getBlockStyle(), var12.getOrientation())).getMirrorAlgo();
+                            Oriencube var11 = (var9 = (Oriencube) BlockShapeAlgorithm.getAlgo(var7.getBlockStyle(), var12.getOrientation())).getMirrorAlgo();
                             boolean var6 = false;
 
                             byte var5;
@@ -283,7 +284,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                             SegmentCollisionCheckerCallback var8 = new SegmentCollisionCheckerCallback();
                             if (var12.getSegmentController().getCollisionChecker().checkPieceCollision(var12, var8, true)) {
                                 this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_4, 0.0F);
-                                return false;
+                                return 0;
                             }
 
                             this.buildToolsManager.getBuildToolCreateDocking().docker = var12;
@@ -294,7 +295,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                             SegmentCollisionCheckerCallback var13 = new SegmentCollisionCheckerCallback();
                             if (this.buildToolsManager.getBuildToolCreateDocking().potentialCore.getSegmentController().getCollisionChecker().checkPieceCollision(this.buildToolsManager.getBuildToolCreateDocking().potentialCore, var13, true)) {
                                 this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_5, 0.0F);
-                                return false;
+                                return 0;
                             }
 
                             this.buildToolsManager.getBuildToolCreateDocking().core = this.buildToolsManager.getBuildToolCreateDocking().potentialCore;
@@ -308,21 +309,22 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                         this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_7, 0.0F);
                     }
 
-                    return false;
+                    return 0;
                 }
             }
         } else {
             System.err.println("[TUTORIAL] cant place because not selected cannon computer: " + this.getInShipControlManager().getShipControlManager().getSegmentBuildController().getSelectedBlock());
             this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_1, 0.0F);
-            return false;
+            return 0;
         }
     }
 
-    public int buildBlock(EditableSendableSegmentController var1, Vector3f var2, Vector3f var3, BuildCallback var4, DimensionFilter var5, ArrayList<SymmetryPlane> var6, float var7) {
+    public int buildBlock(EditableSendableSegmentController var1, Vector3f var2, Vector3f var3, BuildCallback var4, DimensionFilter var5, SymmetryPlanes var6, float var7) {
         short var8 = this.getSelectedType();
         this.stacked = false;
-        for(SymmetryPlane symmetryPlane : var6) {
-            if(checkCanBuild(var1, symmetryPlane, var8)) {
+        for(SymmetryPlane symmetryPlane : net.thederpgamer.betterbuilding.data.BuildData.getAllPlanes()) {
+            net.thederpgamer.betterbuilding.data.BuildData.currentPlane = symmetryPlane;
+            if(checkCanBuild(var1, null, var8) != 0) {
                 if (!this.stacked && this.buildToolsManager.slabSize.setting > 0 && ElementKeyMap.isValidType(var8) && ElementKeyMap.getInfoFast(var8).slab == 0 && ElementKeyMap.getInfoFast(var8).slabIds != null && ElementKeyMap.getInfoFast(var8).slabIds.length == 3) {
                     var8 = ElementKeyMap.getInfoFast(var8).slabIds[this.buildToolsManager.slabSize.setting - 1];
                 }
@@ -1619,14 +1621,14 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
         this.slotKeyMap.put(11, 9);
     }
 
-    public void removeBlock(final EditableSendableSegmentController var1, Vector3f var2, Vector3f var3, final SegmentPiece var4, float var5, ArrayList<SymmetryPlane> var6, short var7, final RemoveCallback var8) {
+    public void removeBlock(final EditableSendableSegmentController var1, Vector3f var2, Vector3f var3, final SegmentPiece var4, float var5, SymmetryPlanes var6, short var7, final RemoveCallback var8) {
         if (this.getState().getController().allowedToEdit(var1)) {
             if (var1.isInTestSector()) {
                 this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_64, 0.0F);
             } else if (!this.isAllowedToBuildAndSpawnShips()) {
                 this.getState().getController().popupAlertTextMessage("ERROR\n \nCan't do that!\nYou are a spectator!", 0.0F);
             } else {
-                for (SymmetryPlane symmetryPlane : var6) {
+                for (SymmetryPlane symmetryPlane : BuildData.getAllPlanes()) {
                     short var9 = 0;
                     if (var7 == 32767 && this.getBuildToolsManager().getRemoveFilter() != 0) {
                         var7 = this.getBuildToolsManager().getRemoveFilter();

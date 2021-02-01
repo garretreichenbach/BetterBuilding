@@ -26,7 +26,6 @@ import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
 import org.schema.game.client.controller.manager.ingame.PlayerInteractionControlManager;
 import org.schema.game.client.controller.manager.ingame.SegmentBuildController;
 import org.schema.game.client.controller.manager.ingame.SegmentControlManager;
-import org.schema.game.client.controller.manager.ingame.SymmetryPlanes;
 import org.schema.game.client.controller.manager.ingame.character.PlayerExternalController;
 import org.schema.game.client.controller.manager.ingame.ship.ShipControllerManager;
 import org.schema.game.client.data.GameClientState;

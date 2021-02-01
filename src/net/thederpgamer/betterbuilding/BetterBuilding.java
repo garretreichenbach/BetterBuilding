@@ -11,16 +11,18 @@ import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.NewAdvancedBuildMode;
 import net.thederpgamer.betterbuilding.util.HotbarUtils;
-import org.schema.game.client.controller.manager.ingame.*;
-import org.schema.game.client.controller.manager.ingame.character.PlayerExternalController;
-import org.schema.game.client.view.BuildModeDrawer;
-import org.schema.game.common.controller.EditableSendableSegmentController;
+import org.apache.commons.io.IOUtils;
+import org.schema.game.client.data.GameClientState;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.schine.input.Keyboard;
 import org.schema.schine.input.KeyboardMappings;
 import javax.vecmath.Vector2f;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.security.ProtectionDomain;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * BetterBuilding.java
@@ -36,10 +38,8 @@ public class BetterBuilding extends StarMod {
     public static void main(String[] args) { }
 
     //Data
-    private final String version = "1.2.4";
     public BuildHotbar buildHotbar;
     public boolean autoSaveTimerStarted = false;
-    public int maxSymmetryPlanes = 5;
 
     //Config
     private String[] defaultConfig = {
@@ -51,32 +51,30 @@ public class BetterBuilding extends StarMod {
     public boolean debugMode = false;
     public Vector2f hotbarPos = new Vector2f(1038, 627);
     public int autoSaveInterval = 3500;
+    public int maxSymmetryPlanes = 5;
 
     public static BetterBuilding getInstance() {
         return instance;
     }
 
     @Override
-    public void onGameStart() {
-        initialize();
-    }
-
-    @Override
     public void onEnable() {
+        instance = this;
         loadConfig();
-        registerOverwrites();
         registerListeners();
         HotbarUtils.initialize();
     }
 
-    private void initialize() {
-        instance = this;
-        forceEnable = true;
-        setModName("BetterBuilding");
-        setModDescription("A small mod with helpful building tools and utilities.");
-        setModAuthor("TheDerpGamer");
-        setSMDResourceId(8219);
-        setModVersion(version);
+    @Override
+    public byte[] onClassTransform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] byteCode) {
+        if(className.endsWith("BuildModeDrawer.class") || className.endsWith("BuildSelection.class") ||
+        className.endsWith("CopyArea.class") || className.endsWith("SegmentBuildController.class") ||
+        className.endsWith("PlayerExternalController.class") || className.endsWith("PlayerInteractionControlManager.class") ||
+        className.endsWith("EditableSendableSegmentController.class")) {
+            return super.onClassTransform(loader, className, classBeingRedefined, protectionDomain, overwriteClass(classBeingRedefined, byteCode));
+        } else {
+            return super.onClassTransform(loader, className, classBeingRedefined, protectionDomain, byteCode);
+        }
     }
 
     private void loadConfig() {
@@ -88,17 +86,6 @@ public class BetterBuilding extends StarMod {
         hotbarPos = new Vector2f(Float.parseFloat(posString[0]), Float.parseFloat(posString[1]));
         autoSaveInterval = config.getConfigurableInt("auto-save-interval", 3500);
         maxSymmetryPlanes = config.getConfigurableInt("max-symmetry-planes", 5);
-    }
-
-    private void registerOverwrites() {
-        overwriteClass(BuildModeDrawer.class, false);
-        overwriteClass(BuildSelection.class, false);
-        overwriteClass(BuildToolsManager.class, false);
-        overwriteClass(CopyArea.class, false);
-        overwriteClass(PlayerInteractionControlManager.class, false);
-        overwriteClass(SegmentBuildController.class, false);
-        overwriteClass(PlayerExternalController.class, false);
-        overwriteClass(EditableSendableSegmentController.class, false);
     }
 
     private void registerListeners() {
@@ -123,7 +110,7 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(MousePressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(GameClient.getControlManager() != null && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                if(GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
                     if(buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
@@ -157,7 +144,7 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(KeyPressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(GameClient.getControlManager() != null && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                if(GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
                     if(buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
@@ -222,5 +209,29 @@ public class BetterBuilding extends StarMod {
                 }
             }
         }, this);
+    }
+
+    private byte[] overwriteClass(Class<?> classBeingRedefined, byte[] byteCode) {
+        String name = classBeingRedefined.getSimpleName();
+        byte[] bytes = null;
+        try {
+            ZipInputStream file = new ZipInputStream(new FileInputStream(this.getSkeleton().getJarFile()));
+            while(true) {
+                ZipEntry nextEntry = file.getNextEntry();
+                if(nextEntry == null) break;
+                if(nextEntry.getName().contains(name)){
+                    bytes = IOUtils.toByteArray(file);
+                }
+            }
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(bytes != null) {
+            System.err.println("[BetterBuilding] Overwrote Class: " + name);
+            return bytes;
+        } else {
+            return byteCode;
+        }
     }
 }

@@ -1,6 +1,7 @@
 package net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry;
 
 import net.thederpgamer.betterbuilding.BetterBuilding;
+import net.thederpgamer.betterbuilding.data.BuildData;
 import net.thederpgamer.betterbuilding.gui.Advanced2dButtonPane;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
 import org.schema.game.client.view.gui.advanced.tools.*;
@@ -23,10 +24,6 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
     private ArrayList<Advanced2dButtonPane> buttonPanes;
 
-    private ArrayList<SymmetryPlane> xyPlanes = new ArrayList<>();
-    private ArrayList<SymmetryPlane> xzPlanes = new ArrayList<>();
-    private ArrayList<SymmetryPlane> yzPlanes = new ArrayList<>();
-
     private boolean mirrorCubic = true;
     private boolean mirrorNonCubic = true;
 
@@ -35,63 +32,30 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
     }
 
     private int getRows() {
-        return Math.max(Math.max(xyPlanes.size(), xzPlanes.size()), yzPlanes.size());
+        return Math.max(Math.max(getXYPlanes().size(), getXZPlanes().size()), getYZPlanes().size());
+    }
+
+    private ArrayList<SymmetryPlane> getAllPlanes() {
+        return BuildData.getAllPlanes();
+    }
+
+    private ArrayList<SymmetryPlane> getXYPlanes() {
+        return BuildData.xyPlanes;
+    }
+
+    private ArrayList<SymmetryPlane> getXZPlanes() {
+        return BuildData.xzPlanes;
+    }
+
+    private ArrayList<SymmetryPlane> getYZPlanes() {
+        return BuildData.yzPlanes;
     }
 
     @Override
     public void build(final GUIContentPane contentPane, GUIDockableDirtyInterface dockableInterface) {
         contentPane.setTextBoxHeightLast(80);
 
-        addButton(contentPane.getContent(0), 0, 0, new ButtonResult() {
-            @Override
-            public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.YELLOW;
-            }
-
-            @Override
-            public ButtonCallback initCallback() {
-                return new ButtonCallback() {
-                    @Override
-                    public void pressedLeftMouse() {
-                        if(getRows() < BetterBuilding.getInstance().maxSymmetryPlanes) addRow(getRows(), contentPane);
-                    }
-
-                    @Override
-                    public void pressedRightMouse() { }
-                };
-            }
-
-            @Override
-            public String getName() {
-                return "ADD";
-            }
-        });
-        addButton(contentPane.getContent(0), 1, 0, new ButtonResult() {
-            @Override
-            public GUIHorizontalArea.HButtonColor getColor() {
-                return GUIHorizontalArea.HButtonColor.ORANGE;
-            }
-
-            @Override
-            public ButtonCallback initCallback() {
-                return new ButtonCallback() {
-                    @Override
-                    public void pressedLeftMouse() {
-                        if(getRows() > 1) removeRow(contentPane);
-                    }
-
-                    @Override
-                    public void pressedRightMouse() { }
-                };
-            }
-
-            @Override
-            public String getName() {
-                return "REMOVE";
-            }
-        });
-
-        addCheckbox(contentPane.getContent(0), 0, 1, new CheckboxResult() {
+        addCheckbox(contentPane.getContent(0), 0, 0, new CheckboxResult() {
 
             @Override
             public CheckboxCallback initCallback() {
@@ -122,7 +86,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return Lng.str("Rotates cubic blocks on the other side of the plane\nto mirror the blocks you place");
             }
         });
-        addCheckbox(contentPane.getContent(0), 0, 2, new CheckboxResult() {
+        addCheckbox(contentPane.getContent(0), 0, 1, new CheckboxResult() {
 
             @Override
             public CheckboxCallback initCallback() {
@@ -153,16 +117,57 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return Lng.str("Rotates non-cubic blocks on the other side of the plane\nto mirror the blocks you place");
             }
         });
+
+        addButton(contentPane.getContent(0), 0, 2, new ButtonResult() {
+            @Override
+            public GUIHorizontalArea.HButtonColor getColor() {
+                return GUIHorizontalArea.HButtonColor.YELLOW;
+            }
+
+            @Override
+            public ButtonCallback initCallback() {
+                return new ButtonCallback() {
+                    @Override
+                    public void pressedLeftMouse() {
+                        if(getRows() < BetterBuilding.getInstance().maxSymmetryPlanes) addRow(getRows(), contentPane);
+                    }
+
+                    @Override
+                    public void pressedRightMouse() { }
+                };
+            }
+
+            @Override
+            public String getName() {
+                return "ADD";
+            }
+        });
+        addButton(contentPane.getContent(0), 1, 2, new ButtonResult() {
+            @Override
+            public GUIHorizontalArea.HButtonColor getColor() {
+                return GUIHorizontalArea.HButtonColor.ORANGE;
+            }
+
+            @Override
+            public ButtonCallback initCallback() {
+                return new ButtonCallback() {
+                    @Override
+                    public void pressedLeftMouse() {
+                        if(getRows() > 1) removeRow(contentPane);
+                    }
+
+                    @Override
+                    public void pressedRightMouse() { }
+                };
+            }
+
+            @Override
+            public String getName() {
+                return "REMOVE";
+            }
+        });
         buttonPanes = new ArrayList<>();
         addRow(0, contentPane);
-    }
-
-    private ArrayList<SymmetryPlane> getAllPlanes() {
-        ArrayList<SymmetryPlane> allPlanes = new ArrayList<>();
-        allPlanes.addAll(xyPlanes);
-        allPlanes.addAll(xzPlanes);
-        allPlanes.addAll(yzPlanes);
-        return allPlanes;
     }
 
     private void setMirrorCubic(boolean bool) {
@@ -194,8 +199,8 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return new ButtonCallback() {
                     @Override
                     public void pressedLeftMouse() {
-                        int value = xyPlanes.get(index).getExtraDist();
-                        xyPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
+                        int value = getXYPlanes().get(index).getExtraDist();
+                        getXYPlanes().get(index).setExtraDist(value == 0 ? 1 : 0);
                     }
 
                     @Override
@@ -213,7 +218,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
             @Override
             public boolean isHighlighted() {
-                return index < xyPlanes.size() && xyPlanes.get(index).getExtraDist() == 1;
+                return index < getXYPlanes().size() && getXYPlanes().get(index).getExtraDist() == 1;
             }
         });
 
@@ -229,8 +234,8 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return new ButtonCallback() {
                     @Override
                     public void pressedLeftMouse() {
-                        int value = xzPlanes.get(index).getExtraDist();
-                        xzPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
+                        int value = getXZPlanes().get(index).getExtraDist();
+                        getXZPlanes().get(index).setExtraDist(value == 0 ? 1 : 0);
                     }
 
                     @Override
@@ -248,9 +253,10 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
             @Override
             public boolean isHighlighted() {
-                return index < xzPlanes.size() && xzPlanes.get(index).getExtraDist() == 1;
+                return index < getXZPlanes().size() && getXZPlanes().get(index).getExtraDist() == 1;
             }
         });
+
 
         buttonPane.addButton(2, 0, new NewSymmetryResult(SymmetryMode.YZ));
         buttonPane.addButton(2, 1, new ButtonResult() {
@@ -264,8 +270,8 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                 return new ButtonCallback() {
                     @Override
                     public void pressedLeftMouse() {
-                        int value = yzPlanes.get(index).getExtraDist();
-                        yzPlanes.get(index).setExtraDist(value == 0 ? 1 : 0);
+                        int value = getYZPlanes().get(index).getExtraDist();
+                        getYZPlanes().get(index).setExtraDist(value == 0 ? 1 : 0);
                     }
 
                     @Override
@@ -282,7 +288,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
 
             @Override
             public boolean isHighlighted() {
-                return index < yzPlanes.size() && yzPlanes.get(index).getExtraDist() == 1;
+                return index < getYZPlanes().size() && getYZPlanes().get(index).getExtraDist() == 1;
             }
         });
 
@@ -291,9 +297,9 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
     }
 
     private void removeRow(GUIContentPane contentPane) {
-        if(xyPlanes.size() == getRows()) xyPlanes.remove(getRows() - 1);
-        if(xzPlanes.size() == getRows()) xzPlanes.remove(getRows() - 1);
-        if(yzPlanes.size() == getRows()) yzPlanes.remove(getRows() - 1);
+        if(getXYPlanes().size() == getRows()) getXYPlanes().remove(getRows() - 1);
+        if(getXZPlanes().size() == getRows()) getXZPlanes().remove(getRows() - 1);
+        if(getYZPlanes().size() == getRows()) getYZPlanes().remove(getRows() - 1);
 
         Advanced2dButtonPane buttonPane = buttonPanes.get(buttonPanes.size() - 1);
         contentPane.getTextboxes().remove(contentPane.getTextboxes().top());
@@ -318,13 +324,13 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
             this.symmetryPlane = new SymmetryPlane(symmetryMode);
             switch (symmetryMode) {
                 case XY:
-                    xyPlanes.add(symmetryPlane);
+                    getXYPlanes().add(symmetryPlane);
                     break;
                 case XZ:
-                    xzPlanes.add(symmetryPlane);
+                    getXZPlanes().add(symmetryPlane);
                     break;
                 case YZ:
-                    yzPlanes.add(symmetryPlane);
+                    getYZPlanes().add(symmetryPlane);
                     break;
             }
         }
@@ -359,6 +365,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
                             symmetryPlane.setEnabled(false);
                         } else {
                             symmetryPlane.setPlaceMode(true);
+
                         }
                     } else {
                         symmetryPlane.setPlaceMode(false);

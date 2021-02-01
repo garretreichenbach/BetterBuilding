@@ -17,7 +17,7 @@ public class HotbarUtils {
     private static File hotbarsFile;
 
     public static void initialize() {
-        hotbarsFile = new File(BetterBuilding.getInstance().getResourcesFolder().getPath() + "/hotbars.smdat");
+        hotbarsFile = new File(BetterBuilding.getInstance().getSkeleton().getResourcesFolder().getPath() + "/hotbars.smdat");
         if(!hotbarsFile.exists()) {
             try {
                 hotbarsFile.createNewFile();
