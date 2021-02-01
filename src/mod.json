@@ -2,7 +2,7 @@
   "name": "BetterBuilding",
   "author": "TheDerpGamer",
   "description": "A small mod with helpful building tools and utilities",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "starmade_version": "0.202.108",
   "client_mod": true,
   "server_mod": false,

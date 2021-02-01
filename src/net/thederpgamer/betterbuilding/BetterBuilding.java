@@ -2,14 +2,12 @@ package net.thederpgamer.betterbuilding;
 
 import api.common.GameClient;
 import api.listener.Listener;
-import api.listener.events.gui.PlayerGUICreateEvent;
 import api.listener.events.input.KeyPressEvent;
 import api.listener.events.input.MousePressEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
 import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
-import net.thederpgamer.betterbuilding.gui.advancedbuildmode.NewAdvancedBuildMode;
 import net.thederpgamer.betterbuilding.util.HotbarUtils;
 import org.apache.commons.io.IOUtils;
 import org.schema.game.client.data.GameClientState;
@@ -19,7 +17,6 @@ import org.schema.schine.input.KeyboardMappings;
 import javax.vecmath.Vector2f;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.security.ProtectionDomain;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -42,7 +39,7 @@ public class BetterBuilding extends StarMod {
     public boolean autoSaveTimerStarted = false;
 
     //Config
-    private String[] defaultConfig = {
+    private final String[] defaultConfig = {
             "debug-mode: false",
             "hotbar-pos: 1038, 627",
             "auto-save-interval: 3500",
@@ -70,7 +67,8 @@ public class BetterBuilding extends StarMod {
         if(className.endsWith("BuildModeDrawer") || className.endsWith("BuildSelection") ||
             className.endsWith("CopyArea") || className.endsWith("SegmentBuildController") ||
             className.endsWith("PlayerExternalController") || className.endsWith("PlayerInteractionControlManager") ||
-            className.endsWith("EditableSendableSegmentController")) {
+            className.endsWith("EditableSendableSegmentController") || className.endsWith("AdvancedBuildModeGUISGroup") ||
+            className.endsWith("AdvancedBuildModeSymmetry")) {
             return overwriteClass(className, byteCode);
         } else {
             return super.onClassTransform(loader, className, classBeingRedefined, protectionDomain, byteCode);
@@ -89,23 +87,6 @@ public class BetterBuilding extends StarMod {
     }
 
     private void registerListeners() {
-        StarLoader.registerListener(PlayerGUICreateEvent.class, new Listener<PlayerGUICreateEvent>() {
-            @Override
-            public void onEvent(PlayerGUICreateEvent event) {
-                if(!(event.getPlayerPanel().advancedBuildMode instanceof NewAdvancedBuildMode)) {
-                    try {
-                        Field advancedBuildModeField = event.getPlayerPanel().getClass().getDeclaredField("advancedBuildMode");
-                        advancedBuildModeField.setAccessible(true);
-                        NewAdvancedBuildMode advancedBuildMode = new NewAdvancedBuildMode(event.getPlayerPanel().getState());
-                        advancedBuildMode.onInit();
-                        advancedBuildModeField.set(event.getPlayerPanel(), advancedBuildMode);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }, this);
-
         StarLoader.registerListener(MousePressEvent.class, new Listener<MousePressEvent>() {
             @Override
             public void onEvent(MousePressEvent event) {

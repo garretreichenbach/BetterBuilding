@@ -277,6 +277,10 @@ public class SegmentBuildController extends AbstractBuildControlManager {
         return BuildData.getAllPlanes();
     }
 
+    public SymmetryPlanes getSymmetryPlanes() {
+        return null;
+    }
+
     public void setPlaceMode(boolean placeMode) {
         for(SymmetryPlane symmetryPlane : getAllSymmetryPlanes()) {
             symmetryPlane.setPlaceMode(placeMode);

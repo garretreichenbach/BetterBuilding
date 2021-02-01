@@ -1,11 +1,12 @@
-package net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry;
+package org.schema.game.client.view.gui.advancedbuildmode;
 
 import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.data.BuildData;
 import net.thederpgamer.betterbuilding.gui.Advanced2dButtonPane;
+import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryMode;
+import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
 import org.schema.game.client.view.gui.advanced.tools.*;
-import org.schema.game.client.view.gui.advancedbuildmode.AdvancedBuildModeSymmetry;
 import org.schema.schine.common.language.Lng;
 import org.schema.schine.graphicsengine.forms.gui.GUIElement;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIContentPane;
@@ -14,20 +15,19 @@ import org.schema.schine.graphicsengine.forms.gui.newgui.GUIHorizontalArea;
 import java.util.ArrayList;
 
 /**
- * NewAdvancedBuildModeSymmetry.java
- * Improved version of AdvancedBuildModeSymmetry that supports multiple planes of the same axis
+ * AdvancedBuildModeSymmetry.java
  * ==================================================
- * Created 01/27/2021
- * @author TheDerpGamer
+ * Modified 02/01/2021 by TheDerpGamer
+ * @author Schema
  */
-public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
+public class AdvancedBuildModeSymmetry extends AdvancedBuildModeGUISGroup {
 
     private ArrayList<Advanced2dButtonPane> buttonPanes;
 
     private boolean mirrorCubic = true;
     private boolean mirrorNonCubic = true;
 
-    public NewAdvancedBuildModeSymmetry(AdvancedGUIElement guiElement) {
+    public AdvancedBuildModeSymmetry(AdvancedGUIElement guiElement) {
         super(guiElement);
     }
 
@@ -187,7 +187,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
     private void addRow(final int index, GUIContentPane contentPane) {
         Advanced2dButtonPane buttonPane = new Advanced2dButtonPane(contentPane.addNewTextBox(52), 3, 2);
 
-        buttonPane.addButton(0, 0, new NewSymmetryResult(SymmetryMode.XY));
+        buttonPane.addButton(0, 0, new SymmetryResult(SymmetryMode.XY));
         buttonPane.addButton(0, 1, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
@@ -222,7 +222,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
             }
         });
 
-        buttonPane.addButton(1, 0, new NewSymmetryResult(SymmetryMode.XZ));
+        buttonPane.addButton(1, 0, new SymmetryResult(SymmetryMode.XZ));
         buttonPane.addButton(1, 1, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
@@ -258,7 +258,7 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
         });
 
 
-        buttonPane.addButton(2, 0, new NewSymmetryResult(SymmetryMode.YZ));
+        buttonPane.addButton(2, 0, new SymmetryResult(SymmetryMode.YZ));
         buttonPane.addButton(2, 1, new ButtonResult() {
             @Override
             public GUIHorizontalArea.HButtonColor getColor() {
@@ -314,12 +314,22 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
         return button;
     }
 
-    private class NewSymmetryResult extends ButtonResult {
+    @Override
+    public String getId() {
+        return "BSYMMETRY";
+    }
+
+    @Override
+    public String getTitle() {
+        return Lng.ORG_SCHEMA_GAME_CLIENT_VIEW_GUI_ADVANCEDBUILDMODE_ADVANCEDBUILDMODESYMMETRY_7;
+    }
+
+    private class SymmetryResult extends ButtonResult {
 
         private SymmetryMode symmetryMode;
         private SymmetryPlane symmetryPlane;
 
-        public NewSymmetryResult(SymmetryMode symmetryMode) {
+        public SymmetryResult(SymmetryMode symmetryMode) {
             this.symmetryMode = symmetryMode;
             this.symmetryPlane = new SymmetryPlane(symmetryMode);
             switch (symmetryMode) {

@@ -231,7 +231,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                     return false;
                 } else if (var3.getHpController().isRebootingRecoverFromOverheating()) {
                     if (var2) {
-                        this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_32, new Object[]{StringTools.formatTimeFromMS(var3.getHpController().getRebootTimeLeftMS())}), 0.0F);
+                        this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_32, StringTools.formatTimeFromMS(var3.getHpController().getRebootTimeLeftMS())), 0.0F);
                     }
 
                     return false;
@@ -304,7 +304,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                 this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getInShipControlManager().popupShipRebootDialog(var1.getSegmentController());
                 return false;
             } else if (var1.getSegmentController().getHpController().isRebootingRecoverFromOverheating()) {
-                this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_8, new Object[]{StringTools.formatTimeFromMS(var1.getSegmentController().getHpController().getRebootTimeLeftMS())}), 0.0F);
+                this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_8, StringTools.formatTimeFromMS(var1.getSegmentController().getHpController().getRebootTimeLeftMS())), 0.0F);
                 return false;
             } else if (!this.canEnter(var1.getType())) {
                 this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_37, 0.0F);
@@ -343,7 +343,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                 this.getState().getController().requestControlChange(this.getState().getCharacter(), (PlayerControllable)var1.getSegmentController(), new Vector3i(), var1.getAbsolutePos(new Vector3i()), true);
                 float var6;
                 if (var1.getSegmentController().railController.isDockedAndExecuted() && (var6 = var1.getSegmentController().railController.getRailMassPercent()) < 1.0F) {
-                    this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_10, new Object[]{StringTools.formatPointZero(var6 * 100.0F)}), 0.0F);
+                    this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_10, StringTools.formatPointZero(var6 * 100.0F)), 0.0F);
                 }
 
                 return true;
@@ -506,7 +506,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                 }
 
                 if (var8 instanceof ShopSpaceStation && var3.equalsPos(WorldCreatorShopMannedFactory.shopkeepSpawner)) {
-                    this.getState().getPlayer().sendSimpleCommand(SimplePlayerCommands.SPAWN_SHOPKEEP, new Object[]{((GameTransformable)var8).getId()});
+                    this.getState().getPlayer().sendSimpleCommand(SimplePlayerCommands.SPAWN_SHOPKEEP, ((GameTransformable)var8).getId());
                     return;
                 }
 
@@ -547,7 +547,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                 if (var1.getSegment().getSegmentController().isScrap()) {
                     long var2 = var1.getSegment().getSegmentController().getElementClassCountMap().getPrice();
                     if ((long)this.getState().getPlayer().getCredits() < var2) {
-                        this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_17, new Object[]{var2}), 0.0F);
+                        this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_17, var2), 0.0F);
                     } else {
                         this.repairSpaceStation(var1, var2);
                     }
@@ -555,7 +555,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                     this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_18, 0.0F);
                 }
             } else if (this.getState().getPlayer().getCredits() < this.getState().getGameState().getStationCost()) {
-                this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_19, new Object[]{StringTools.formatSeperated(this.getState().getGameState().getStationCost())}), 0.0F);
+                this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_19, StringTools.formatSeperated(this.getState().getGameState().getStationCost())), 0.0F);
             } else {
                 this.buildSpaceStation();
             }
@@ -570,8 +570,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
         } else if (this.getState().getCharacter().getNearestPiece(false) != null) {
             this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_14, 0.0F);
         } else {
-            PlayerGameTextInput var1;
-            (var1 = new PlayerGameTextInput("PlayerExternalController_NEW_ENTITY_NAME", this.getState(), 50, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_15, this.description, this.getState().getPlayerName() + "_" + System.currentTimeMillis()) {
+            PlayerGameTextInput var1 = new PlayerGameTextInput("PlayerExternalController_NEW_ENTITY_NAME", this.getState(), 50, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_15, this.description, this.getState().getPlayerName() + "_" + System.currentTimeMillis()) {
                 public String[] getCommandPrefixes() {
                     return null;
                 }
@@ -618,7 +617,8 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                         return false;
                     }
                 }
-            }).setInputChecker(new InputChecker() {
+            };
+            var1.setInputChecker(new InputChecker() {
                 public boolean check(String var1, TextCallback var2) {
                     if (System.currentTimeMillis() - PlayerExternalController.this.getState().getController().lastShipSpawn < 5000L) {
                         return false;
@@ -742,7 +742,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                 long var6;
                 if ((var6 = System.currentTimeMillis() - this.getState().getCharacter().getActivatedStuckProtection()) < 8000L) {
                     int var4 = (int)(8L - var6 / 1000L);
-                    String var5 = StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_20, new Object[]{KeyboardMappings.STUCK_PROTECT.getKeyChar(), var4});
+                    String var5 = StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_20, KeyboardMappings.STUCK_PROTECT.getKeyChar(), var4);
                     if (this.last != null) {
                         this.getState().getController().changePopupMessage(this.last, var5);
                     } else {
@@ -765,8 +765,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
     }
 
     private void buildSpaceStation() {
-        PlayerGameTextInput var1;
-        (var1 = new PlayerGameTextInput("PlayerExternalController_NEW_ENTITY_NAME", this.getState(), 50, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_21, this.description, this.getState().getPlayerName() + "_" + System.currentTimeMillis()) {
+        PlayerGameTextInput var1 = new PlayerGameTextInput("PlayerExternalController_NEW_ENTITY_NAME", this.getState(), 50, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_21, this.description, this.getState().getPlayerName() + "_" + System.currentTimeMillis()) {
             public String[] getCommandPrefixes() {
                 return null;
             }
@@ -809,7 +808,8 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                     return false;
                 }
             }
-        }).setInputChecker(new InputChecker() {
+        };
+        var1.setInputChecker(new InputChecker() {
             public boolean check(String var1, TextCallback var2) {
                 if (EntityRequest.isShipNameValid(var1)) {
                     return true;
@@ -823,8 +823,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
     }
 
     private void repairSpaceStation(final SegmentPiece var1, long var2) {
-        PlayerGameTextInput var4;
-        (var4 = new PlayerGameTextInput("CONFIRM", this.getState(), 50, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_23, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_24, new Object[]{var2}), var1.getSegment().getSegmentController().getRealName()) {
+        PlayerGameTextInput var4 = new PlayerGameTextInput("CONFIRM", this.getState(), 50, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_23, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_24, var2), var1.getSegment().getSegmentController().getRealName()) {
             public String[] getCommandPrefixes() {
                 return null;
             }
@@ -843,18 +842,19 @@ public class PlayerExternalController extends AbstractBuildControlManager {
             }
 
             public void onFailedTextCheck(String var1x) {
-                this.setErrorMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_25, new Object[]{var1x}));
+                this.setErrorMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_CHARACTER_PLAYEREXTERNALCONTROLLER_25, var1x));
             }
 
             public boolean onInput(String var1x) {
                 if (this.getState().getCharacter() != null && this.getState().getCharacter().getPhysicsDataContainer() != null && this.getState().getCharacter().getPhysicsDataContainer().isInitialized()) {
-                    this.getState().getPlayer().sendSimpleCommand(SimplePlayerCommands.REPAIR_STATION, new Object[]{var1.getSegment().getSegmentController().getId(), var1x});
+                    this.getState().getPlayer().sendSimpleCommand(SimplePlayerCommands.REPAIR_STATION, var1.getSegment().getSegmentController().getId(), var1x);
                     return true;
                 } else {
                     return false;
                 }
             }
-        }).setInputChecker(new InputChecker() {
+        };
+        var4.setInputChecker(new InputChecker() {
             public boolean check(String var1, TextCallback var2) {
                 if (EntityRequest.isShipNameValid(var1)) {
                     return true;
