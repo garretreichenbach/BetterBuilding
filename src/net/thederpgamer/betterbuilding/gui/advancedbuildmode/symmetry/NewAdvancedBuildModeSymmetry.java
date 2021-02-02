@@ -1,7 +1,6 @@
 package net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry;
 
 import net.thederpgamer.betterbuilding.BetterBuilding;
-import net.thederpgamer.betterbuilding.data.BuildData;
 import net.thederpgamer.betterbuilding.gui.Advanced2dButtonPane;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
 import org.schema.game.client.view.gui.advanced.tools.*;
@@ -36,19 +35,19 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
     }
 
     private ArrayList<SymmetryPlane> getAllPlanes() {
-        return BuildData.getAllPlanes();
+        return BetterBuilding.getInstance().getAllPlanes();
     }
 
     private ArrayList<SymmetryPlane> getXYPlanes() {
-        return BuildData.xyPlanes;
+        return BetterBuilding.getInstance().xyPlanes;
     }
 
     private ArrayList<SymmetryPlane> getXZPlanes() {
-        return BuildData.xzPlanes;
+        return BetterBuilding.getInstance().xzPlanes;
     }
 
     private ArrayList<SymmetryPlane> getYZPlanes() {
-        return BuildData.yzPlanes;
+        return BetterBuilding.getInstance().yzPlanes;
     }
 
     @Override

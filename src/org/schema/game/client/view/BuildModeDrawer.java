@@ -367,7 +367,7 @@ public class BuildModeDrawer implements Drawable {
                     }
 
                     if(symmetryPlane.inPlaceMode()) {
-                        this.drawCurrentSymetriePlanesElement(var1, (Transform)null, symmetryPlane.getMode(), this.toBuildPos, (float)symmetryPlane.getExtraDist() * 0.5F);
+                        this.drawCurrentSymetriePlanesElement(var1, (Transform)null, symmetryPlane.getMode().id, this.toBuildPos, (float)symmetryPlane.getExtraDist() * 0.5F);
 
                     }
                 }
@@ -448,7 +448,7 @@ public class BuildModeDrawer implements Drawable {
                 for(SymmetryPlane symmetryPlane : var14) {
                     if(symmetryPlane.getMode().equals(SymmetryMode.XY) || symmetryPlane.getMode().equals(SymmetryMode.XZ) || symmetryPlane.getMode().equals(SymmetryMode.YZ)) {
                         this.drawCurrentSymetriePlanesElement(var1);
-                        this.drawCurrentSymetriePlanesElement(var1, (Transform) null, symmetryPlane.getMode(), this.toBuildPos, (float) symmetryPlane.getExtraDist() * 0.5F);
+                        this.drawCurrentSymetriePlanesElement(var1, (Transform) null, symmetryPlane.getMode().id, this.toBuildPos, (float) symmetryPlane.getExtraDist() * 0.5F);
                     }
                 }
                 if (var1 instanceof ManagedSegmentController && ((ManagedSegmentController)var1).getManagerContainer() instanceof ShieldContainerInterface) {
@@ -1016,7 +1016,7 @@ public class BuildModeDrawer implements Drawable {
             GlUtil.glDisable(3042);
             float var4;
             var4 = (float) symmetryPlane.getExtraDist() * 0.5F;
-            this.drawCurrentSymetriePlanesElement(var1, (Transform) null, symmetryPlane.getMode(), symmetryPlane.getPlane(), var4);
+            this.drawCurrentSymetriePlanesElement(var1, (Transform) null, symmetryPlane.getMode().id, symmetryPlane.getPlane(), var4);
         }
     }
 
@@ -1092,9 +1092,9 @@ public class BuildModeDrawer implements Drawable {
             this.drawReactoAlignCross(var3, var13, var4, var5, 0.0F);
         }
 
-        this.drawCurrentSymetriePlanesElement(var1, var3, SymmetryMode.XY , var13, 0.0F, var6, var7, var4, var5);
-        this.drawCurrentSymetriePlanesElement(var1, var3, SymmetryMode.XZ, var13, 0.0F, var8, var9, var4, var5);
-        this.drawCurrentSymetriePlanesElement(var1, var3, SymmetryMode.YZ, var13, 0.0F, var10, var11, var4, var5);
+        this.drawCurrentSymetriePlanesElement(var1, var3, SymmetryMode.XY.id , var13, 0.0F, var6, var7, var4, var5);
+        this.drawCurrentSymetriePlanesElement(var1, var3, SymmetryMode.XZ.id, var13, 0.0F, var8, var9, var4, var5);
+        this.drawCurrentSymetriePlanesElement(var1, var3, SymmetryMode.YZ.id, var13, 0.0F, var10, var11, var4, var5);
         inReactorAlignSliderSelectedAxis = -1;
     }
 
@@ -1132,16 +1132,16 @@ public class BuildModeDrawer implements Drawable {
         GlUtil.glPopMatrix();
     }
 
-    private void drawCurrentSymetriePlanesElement(SegmentController var1, Transform var2, SymmetryMode var3, Vector3i var4, float var5) {
+    private void drawCurrentSymetriePlanesElement(SegmentController var1, Transform var2, int var3, Vector3i var4, float var5) {
         Vector3f var6 = new Vector3f((float)(var1.getMinPos().x - 1), (float)(var1.getMinPos().y - 1), (float)(var1.getMinPos().z - 1));
         Vector3f var7 = new Vector3f((float)(var1.getMaxPos().x + 1), (float)(var1.getMaxPos().y + 1), (float)(var1.getMaxPos().z + 1));
         Vector4f var8 = new Vector4f();
         Vector4f var9 = new Vector4f();
-        if (var3.equals(SymmetryMode.XY)) {
+        if (var3 == SymmetryMode.XY.id) {
             var8.set(0.0F, 0.0F, 1.0F, 0.3F);
-        } else if (var3.equals(SymmetryMode.XZ)) {
+        } else if (var3 == SymmetryMode.XZ.id) {
             var8.set(0.0F, 1.0F, 0.0F, 0.3F);
-        } else if (var3.equals(SymmetryMode.YZ)) {
+        } else if (var3 == SymmetryMode.YZ.id) {
             var8.set(1.0F, 0.0F, 0.0F, 0.3F);
         }
 
@@ -1149,7 +1149,7 @@ public class BuildModeDrawer implements Drawable {
         this.drawCurrentSymetriePlanesElement(var1, var2, var3, var4, var5, var8, var9, var6, var7);
     }
 
-    private void drawCurrentSymetriePlanesElement(SegmentController var1, Transform var2, SymmetryMode var3, Vector3i var4, float var5, Vector4f var6, Vector4f var7, Vector3f var8, Vector3f var9) {
+    private void drawCurrentSymetriePlanesElement(SegmentController var1, Transform var2, int var3, Vector3i var4, float var5, Vector4f var6, Vector4f var7, Vector3f var8, Vector3f var9) {
         GlUtil.glDepthMask(false);
         GlUtil.glEnable(2929);
         GlUtil.glEnable(3553);
@@ -1175,7 +1175,8 @@ public class BuildModeDrawer implements Drawable {
         var5 = var9.y * 32.0F;
         float var14 = var8.z * 32.0F;
         float var15 = var9.z * 32.0F;
-        switch (var3) {
+        SymmetryMode symmetryMode = SymmetryMode.getFromId(var3);
+        switch (symmetryMode) {
             case XY:
                 GL11.glBegin(7);
                 GlUtil.glColor4f(var6);

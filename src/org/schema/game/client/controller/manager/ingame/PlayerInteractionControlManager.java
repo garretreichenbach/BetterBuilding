@@ -10,7 +10,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.thederpgamer.betterbuilding.data.BuildData;
+import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryMode;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.common.FastMath;
@@ -189,7 +189,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 var3 = var10;
             }
 
-            if (var3 < 0 && !BuildData.currentPlane.inPlaceMode()) {
+            if (var3 < 0 && !BetterBuilding.getInstance().currentPlane.inPlaceMode()) {
                 this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_2, 0.0F);
                 return 0;
             } else if (var1.getHpController().isRebooting()) {
@@ -291,8 +291,8 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
     public int buildBlock(EditableSendableSegmentController var1, Vector3f var2, Vector3f var3, BuildCallback var4, DimensionFilter var5, SymmetryPlanes var6, float var7) {
         short var8 = this.getSelectedType();
         this.stacked = false;
-        for(SymmetryPlane symmetryPlane : net.thederpgamer.betterbuilding.data.BuildData.getAllPlanes()) {
-            net.thederpgamer.betterbuilding.data.BuildData.currentPlane = symmetryPlane;
+        for(SymmetryPlane symmetryPlane : BetterBuilding.getInstance().getAllPlanes()) {
+            BetterBuilding.getInstance().currentPlane = symmetryPlane;
             if(checkCanBuild(var1, null, var8) != 0) {
                 if (!this.stacked && this.buildToolsManager.slabSize.setting > 0 && ElementKeyMap.isValidType(var8) && ElementKeyMap.getInfoFast(var8).slab == 0 && ElementKeyMap.getInfoFast(var8).slabIds != null && ElementKeyMap.getInfoFast(var8).slabIds.length == 3) {
                     var8 = ElementKeyMap.getInfoFast(var8).slabIds[this.buildToolsManager.slabSize.setting - 1];
@@ -1605,7 +1605,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
             } else if (!this.isAllowedToBuildAndSpawnShips()) {
                 this.getState().getController().popupAlertTextMessage("ERROR\n \nCan't do that!\nYou are a spectator!", 0.0F);
             } else {
-                for (SymmetryPlane symmetryPlane : BuildData.getAllPlanes()) {
+                for (SymmetryPlane symmetryPlane : BetterBuilding.getInstance().getAllPlanes()) {
                     short var9 = 0;
                     if (var7 == 32767 && this.getBuildToolsManager().getRemoveFilter() != 0) {
                         var7 = this.getBuildToolsManager().getRemoveFilter();

@@ -10,6 +10,7 @@ import api.mod.StarMod;
 import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.NewAdvancedBuildMode;
+import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import net.thederpgamer.betterbuilding.util.HotbarUtils;
 import org.apache.commons.io.IOUtils;
 import org.schema.game.client.data.GameClientState;
@@ -21,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -40,6 +42,11 @@ public class BetterBuilding extends StarMod {
     //Data
     public BuildHotbar buildHotbar;
     public boolean autoSaveTimerStarted = false;
+
+    public SymmetryPlane currentPlane;
+    public ArrayList<SymmetryPlane> xyPlanes = new ArrayList<>();
+    public ArrayList<SymmetryPlane> xzPlanes = new ArrayList<>();
+    public ArrayList<SymmetryPlane> yzPlanes = new ArrayList<>();
 
     //Config
     private String[] defaultConfig = {
@@ -232,5 +239,13 @@ public class BetterBuilding extends StarMod {
         } else {
             return byteCode;
         }
+    }
+
+    public ArrayList<SymmetryPlane> getAllPlanes() {
+        ArrayList<SymmetryPlane> symmetryPlanes = new ArrayList<>();
+        symmetryPlanes.addAll(xyPlanes);
+        symmetryPlanes.addAll(xzPlanes);
+        symmetryPlanes.addAll(yzPlanes);
+        return symmetryPlanes;
     }
 }

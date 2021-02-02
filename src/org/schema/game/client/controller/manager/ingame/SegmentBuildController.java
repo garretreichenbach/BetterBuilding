@@ -14,7 +14,7 @@ import java.util.Iterator;
 import javax.vecmath.Matrix4f;
 import javax.vecmath.Vector3f;
 
-import net.thederpgamer.betterbuilding.data.BuildData;
+import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.common.FastMath;
 import org.schema.common.util.StringTools;
@@ -262,19 +262,22 @@ public class SegmentBuildController extends AbstractBuildControlManager {
     }
 
     public ArrayList<SymmetryPlane> getXYPlanes() {
-        return BuildData.xyPlanes;
+        return BetterBuilding.getInstance().xyPlanes;
     }
 
     public ArrayList<SymmetryPlane> getXZPlanes() {
-        return BuildData.xzPlanes;
+        return BetterBuilding.getInstance().xzPlanes;
     }
 
     public ArrayList<SymmetryPlane> getYZPlanes() {
-        return BuildData.yzPlanes;
+        return BetterBuilding.getInstance().yzPlanes;
     }
 
     public ArrayList<SymmetryPlane> getAllSymmetryPlanes() {
-        return BuildData.getAllPlanes();
+        try {
+            return BetterBuilding.getInstance().getAllPlanes();
+        } catch (Exception ignored) { }
+        return new ArrayList<>();
     }
 
     public SymmetryPlanes getSymmetryPlanes() {
