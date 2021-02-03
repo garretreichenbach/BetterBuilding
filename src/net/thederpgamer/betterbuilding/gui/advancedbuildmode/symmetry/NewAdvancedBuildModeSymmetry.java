@@ -39,15 +39,15 @@ public class NewAdvancedBuildModeSymmetry extends AdvancedBuildModeSymmetry {
     }
 
     private ArrayList<SymmetryPlane> getXYPlanes() {
-        return BetterBuilding.getInstance().xyPlanes;
+        return BetterBuilding.getInstance().getXYPlanes();
     }
 
     private ArrayList<SymmetryPlane> getXZPlanes() {
-        return BetterBuilding.getInstance().xzPlanes;
+        return BetterBuilding.getInstance().getXZPlanes();
     }
 
     private ArrayList<SymmetryPlane> getYZPlanes() {
-        return BetterBuilding.getInstance().yzPlanes;
+        return BetterBuilding.getInstance().getYZPlanes();
     }
 
     @Override

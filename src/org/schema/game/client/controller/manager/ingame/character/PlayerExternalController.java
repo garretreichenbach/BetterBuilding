@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Observer;
 import javax.vecmath.Vector3f;
 
+import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import org.schema.common.FastMath;
 import org.schema.common.util.StringTools;
@@ -181,16 +182,8 @@ public class PlayerExternalController extends AbstractBuildControlManager {
         }
     }
 
-    public ArrayList<SymmetryPlane> getAllSymmetryPlanes() {
-        ArrayList<SymmetryPlane> allPlanes = new ArrayList<>();
-        allPlanes.addAll(xyPlanes);
-        allPlanes.addAll(xzPlanes);
-        allPlanes.addAll(yzPlanes);
-        return allPlanes;
-    }
-
     public void setPlaceMode(boolean placeMode) {
-        for(SymmetryPlane symmetryPlane : getAllSymmetryPlanes()) {
+        for(SymmetryPlane symmetryPlane : BetterBuilding.getInstance().getAllPlanes()) {
             symmetryPlane.setPlaceMode(placeMode);
         }
     }
@@ -682,7 +675,7 @@ public class PlayerExternalController extends AbstractBuildControlManager {
                 return;
             }
 
-            for(SymmetryPlane symmetryPlane : getAllSymmetryPlanes()) {
+            for(SymmetryPlane symmetryPlane : BetterBuilding.getInstance().getAllPlanes()) {
                 symmetryPlane.setEnabled(false);
             }
             this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager().save(this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager().user);

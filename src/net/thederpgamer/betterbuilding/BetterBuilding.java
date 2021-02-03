@@ -2,14 +2,12 @@ package net.thederpgamer.betterbuilding;
 
 import api.common.GameClient;
 import api.listener.Listener;
-import api.listener.events.gui.PlayerGUICreateEvent;
 import api.listener.events.input.KeyPressEvent;
 import api.listener.events.input.MousePressEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
 import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
-import net.thederpgamer.betterbuilding.gui.advancedbuildmode.NewAdvancedBuildMode;
 import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import net.thederpgamer.betterbuilding.util.HotbarUtils;
 import org.apache.commons.io.IOUtils;
@@ -20,7 +18,6 @@ import org.schema.schine.input.KeyboardMappings;
 import javax.vecmath.Vector2f;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.zip.ZipEntry;
@@ -31,22 +28,23 @@ import java.util.zip.ZipInputStream;
  * Main class for BetterBuilding StarMade mod
  * ==================================================
  * Created 01/21/2021
+ *
  * @author TheDerpGamer
  */
 public class BetterBuilding extends StarMod {
 
     private static BetterBuilding instance;
 
-    public static void main(String[] args) { }
+    public static void main(String[] args) {
+    }
 
     //Data
     public BuildHotbar buildHotbar;
     public boolean autoSaveTimerStarted = false;
 
-    public SymmetryPlane currentPlane;
-    public ArrayList<SymmetryPlane> xyPlanes = new ArrayList<>();
-    public ArrayList<SymmetryPlane> xzPlanes = new ArrayList<>();
-    public ArrayList<SymmetryPlane> yzPlanes = new ArrayList<>();
+    private ArrayList<SymmetryPlane> xyPlanes = new ArrayList<>();
+    private ArrayList<SymmetryPlane> xzPlanes = new ArrayList<>();
+    private ArrayList<SymmetryPlane> yzPlanes = new ArrayList<>();
 
     //Config
     private String[] defaultConfig = {
@@ -65,6 +63,13 @@ public class BetterBuilding extends StarMod {
     }
 
     @Override
+    public void onLoad() {
+        forceDefine("org.schema.game.client.view.BuildModeDrawer$2");
+        forceDefine("org.schema.game.client.controller.manager.ingame.PlayerInteractionControlManager$13");
+        forceDefine("org.schema.game.common.controller.EditableSendableSegmentController$7");
+    }
+
+    @Override
     public void onEnable() {
         instance = this;
         loadConfig();
@@ -74,10 +79,10 @@ public class BetterBuilding extends StarMod {
 
     @Override
     public byte[] onClassTransform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] byteCode) {
-        if(className.endsWith("BuildModeDrawer") || className.endsWith("BuildSelection") ||
-            className.endsWith("CopyArea") || className.endsWith("SegmentBuildController") ||
-            className.endsWith("PlayerExternalController") || className.endsWith("PlayerInteractionControlManager") ||
-            className.endsWith("EditableSendableSegmentController") || className.endsWith("AdvancedBuildModeGUISGroup")) {
+        if (className.endsWith("AdvancedBuildMode") || className.endsWith("BuildModeDrawer") || className.endsWith("BuildSelection") ||
+                className.endsWith("CopyArea") || className.endsWith("SegmentBuildController") ||
+                className.endsWith("PlayerExternalController") || className.endsWith("PlayerInteractionControlManager") ||
+                className.endsWith("EditableSendableSegmentController") || className.endsWith("AdvancedBuildModeGUISGroup")) {
             return overwriteClass(className, byteCode);
         } else {
             return super.onClassTransform(loader, className, classBeingRedefined, protectionDomain, byteCode);
@@ -96,50 +101,33 @@ public class BetterBuilding extends StarMod {
     }
 
     private void registerListeners() {
-        StarLoader.registerListener(PlayerGUICreateEvent.class, new Listener<PlayerGUICreateEvent>() {
-            @Override
-            public void onEvent(PlayerGUICreateEvent event) {
-                if(!(event.getPlayerPanel().advancedBuildMode instanceof NewAdvancedBuildMode)) {
-                    try {
-                        Field advancedBuildModeField = event.getPlayerPanel().getClass().getDeclaredField("advancedBuildMode");
-                        advancedBuildModeField.setAccessible(true);
-                        NewAdvancedBuildMode advancedBuildMode = new NewAdvancedBuildMode(event.getPlayerPanel().getState());
-                        advancedBuildMode.onInit();
-                        advancedBuildModeField.set(event.getPlayerPanel(), advancedBuildMode);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }, this);
-
         StarLoader.registerListener(MousePressEvent.class, new Listener<MousePressEvent>() {
             @Override
             public void onEvent(MousePressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
-                    if(buildHotbar == null) {
+                if (GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                    if (buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
                     buildHotbar.hideHotbars = false;
                     GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(buildHotbar);
 
-                    if(Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping()) && event.getScrollDirection() != 0 && !buildHotbar.anyNumberKeyDown()) {
-                        if(event.getScrollDirection() > 0) {
+                    if (Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping()) && event.getScrollDirection() != 0 && !buildHotbar.anyNumberKeyDown()) {
+                        if (event.getScrollDirection() > 0) {
                             buildHotbar.cycleNext();
-                        } else if(event.getScrollDirection() < 0) {
+                        } else if (event.getScrollDirection() < 0) {
                             buildHotbar.cyclePrevious();
                         } else {
                             return;
                         }
-                        if(!autoSaveTimerStarted) {
+                        if (!autoSaveTimerStarted) {
                             buildHotbar.startAutoSaveTimer(autoSaveInterval);
                             autoSaveTimerStarted = true;
                         }
                         event.setCanceled(true);
                     }
                 } else {
-                    if(buildHotbar != null) {
+                    if (buildHotbar != null) {
                         buildHotbar.setActiveHotbar(0);
                         buildHotbar.hideHotbars = true;
                     }
@@ -151,19 +139,19 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(KeyPressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
-                    if(buildHotbar == null) {
+                if (GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                    if (buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
                     buildHotbar.hideHotbars = false;
                     GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(buildHotbar);
 
-                    if(Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping())) {
-                        if(buildHotbar.anyNumberKeyDown() && !(Keyboard.isKeyDown(29) || Keyboard.isKeyDown(203) || Keyboard.isKeyDown(205) || Keyboard.isKeyDown(200) || Keyboard.isKeyDown(208))) {
+                    if (Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping())) {
+                        if (buildHotbar.anyNumberKeyDown() && !(Keyboard.isKeyDown(29) || Keyboard.isKeyDown(203) || Keyboard.isKeyDown(205) || Keyboard.isKeyDown(200) || Keyboard.isKeyDown(208))) {
                             buildHotbar.setActiveHotbar(buildHotbar.getHotbarNumber(event.getKey()));
-                        } else if(Keyboard.isKeyDown(203)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
+                        } else if (Keyboard.isKeyDown(203)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
                             int offset = 1;
-                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            if (Keyboard.isKeyDown(29)) offset = 30;
                             buildHotbar.bgIndexAnchor.getPos().x -= offset;
                             buildHotbar.displayPosText();
                             try {
@@ -171,9 +159,9 @@ public class BetterBuilding extends StarMod {
                             } catch (IOException exception) {
                                 exception.printStackTrace();
                             }
-                        } else if(Keyboard.isKeyDown(205)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
+                        } else if (Keyboard.isKeyDown(205)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
                             int offset = 1;
-                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            if (Keyboard.isKeyDown(29)) offset = 30;
                             buildHotbar.bgIndexAnchor.getPos().x += offset;
                             buildHotbar.displayPosText();
                             try {
@@ -181,9 +169,9 @@ public class BetterBuilding extends StarMod {
                             } catch (IOException exception) {
                                 exception.printStackTrace();
                             }
-                        } else if(Keyboard.isKeyDown(200)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
+                        } else if (Keyboard.isKeyDown(200)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
                             int offset = 1;
-                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            if (Keyboard.isKeyDown(29)) offset = 30;
                             buildHotbar.bgIndexAnchor.getPos().y -= offset;
                             buildHotbar.displayPosText();
                             try {
@@ -191,9 +179,9 @@ public class BetterBuilding extends StarMod {
                             } catch (IOException exception) {
                                 exception.printStackTrace();
                             }
-                        } else if(Keyboard.isKeyDown(208)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
+                        } else if (Keyboard.isKeyDown(208)) { //Todo: This is a temporary fix for the game's bad gui scaling/positioning
                             int offset = 1;
-                            if(Keyboard.isKeyDown(29)) offset = 30;
+                            if (Keyboard.isKeyDown(29)) offset = 30;
                             buildHotbar.bgIndexAnchor.getPos().y += offset;
                             buildHotbar.displayPosText();
                             try {
@@ -202,14 +190,14 @@ public class BetterBuilding extends StarMod {
                                 exception.printStackTrace();
                             }
                         }
-                        if(!autoSaveTimerStarted) {
+                        if (!autoSaveTimerStarted) {
                             buildHotbar.startAutoSaveTimer(autoSaveInterval);
                             autoSaveTimerStarted = true;
                         }
                         event.setCanceled(true);
                     }
                 } else {
-                    if(buildHotbar != null) {
+                    if (buildHotbar != null) {
                         buildHotbar.setActiveHotbar(0);
                         buildHotbar.hideHotbars = true;
                     }
@@ -222,10 +210,10 @@ public class BetterBuilding extends StarMod {
         byte[] bytes = null;
         try {
             ZipInputStream file = new ZipInputStream(new FileInputStream(this.getSkeleton().getJarFile()));
-            while(true) {
+            while (true) {
                 ZipEntry nextEntry = file.getNextEntry();
-                if(nextEntry == null) break;
-                if(nextEntry.getName().endsWith(className + ".class")){
+                if (nextEntry == null) break;
+                if (nextEntry.getName().endsWith(className + ".class")) {
                     bytes = IOUtils.toByteArray(file);
                 }
             }
@@ -233,12 +221,24 @@ public class BetterBuilding extends StarMod {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if(bytes != null) {
+        if (bytes != null) {
             System.err.println("[BetterBuilding] Overwrote Class: " + className);
             return bytes;
         } else {
             return byteCode;
         }
+    }
+
+    public ArrayList<SymmetryPlane> getXYPlanes() {
+        return xyPlanes;
+    }
+
+    public ArrayList<SymmetryPlane> getXZPlanes() {
+        return xzPlanes;
+    }
+
+    public ArrayList<SymmetryPlane> getYZPlanes() {
+        return yzPlanes;
     }
 
     public ArrayList<SymmetryPlane> getAllPlanes() {

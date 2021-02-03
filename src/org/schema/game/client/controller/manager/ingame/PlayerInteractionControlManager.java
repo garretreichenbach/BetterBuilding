@@ -151,7 +151,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
 
     }
 
-    public short checkCanBuild(final EditableSendableSegmentController var1, SymmetryPlanes var2, short var3) {
+    public short checkCanBuild(final EditableSendableSegmentController var1, SymmetryPlane symmetryPlane, short var3) {
         if (!this.getState().getController().allowedToEdit(var1)) {
             return 0;
         } else if (var1.isInTestSector()) {
@@ -189,7 +189,7 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 var3 = var10;
             }
 
-            if (var3 < 0 && !BetterBuilding.getInstance().currentPlane.inPlaceMode()) {
+            if (var3 < 0 && !symmetryPlane.inPlaceMode()) {
                 this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_2, 0.0F);
                 return 0;
             } else if (var1.getHpController().isRebooting()) {
@@ -292,246 +292,246 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
         short var8 = this.getSelectedType();
         this.stacked = false;
         for(SymmetryPlane symmetryPlane : BetterBuilding.getInstance().getAllPlanes()) {
-            BetterBuilding.getInstance().currentPlane = symmetryPlane;
-            if(checkCanBuild(var1, null, var8) != 0) {
-                if (!this.stacked && this.buildToolsManager.slabSize.setting > 0 && ElementKeyMap.isValidType(var8) && ElementKeyMap.getInfoFast(var8).slab == 0 && ElementKeyMap.getInfoFast(var8).slabIds != null && ElementKeyMap.getInfoFast(var8).slabIds.length == 3) {
-                    var8 = ElementKeyMap.getInfoFast(var8).slabIds[this.buildToolsManager.slabSize.setting - 1];
-                }
+                if (checkCanBuild(var1, symmetryPlane, var8) != 0) {
+                    if (!this.stacked && this.buildToolsManager.slabSize.setting > 0 && ElementKeyMap.isValidType(var8) && ElementKeyMap.getInfoFast(var8).slab == 0 && ElementKeyMap.getInfoFast(var8).slabIds != null && ElementKeyMap.getInfoFast(var8).slabIds.length == 3) {
+                        var8 = ElementKeyMap.getInfoFast(var8).slabIds[this.buildToolsManager.slabSize.setting - 1];
+                    }
 
-                Vector3i var10 = new Vector3i(1, 1, 1);
-                if (isAdvancedBuildMode(this.getState())) {
-                    var10.set(this.getBuildToolsManager().getSize());
-                }
+                    Vector3i var10 = new Vector3i(1, 1, 1);
+                    if (isAdvancedBuildMode(this.getState())) {
+                        var10.set(this.getBuildToolsManager().getSize());
+                    }
 
-                if (this.getBuildToolsManager().isCopyMode()) {
-                    symmetryPlane.setMode(SymmetryMode.COPY);
-                } else if (this.getBuildToolsManager().isPasteMode()) {
-                    symmetryPlane.setMode(SymmetryMode.PASTE);
-                } else if (this.getBuildToolsManager().getBuildHelper() != null && !this.getBuildToolsManager().getBuildHelper().placed) {
-                    symmetryPlane.setMode(SymmetryMode.PLACE);
-                }
+                    if (this.getBuildToolsManager().isCopyMode()) {
+                        symmetryPlane.setMode(SymmetryMode.COPY);
+                    } else if (this.getBuildToolsManager().isPasteMode()) {
+                        symmetryPlane.setMode(SymmetryMode.PASTE);
+                    } else if (this.getBuildToolsManager().getBuildHelper() != null && !this.getBuildToolsManager().getBuildHelper().placed) {
+                        symmetryPlane.setMode(SymmetryMode.PLACE);
+                    }
 
-                SegmentPiece var26;
-                if (var8 != 0 && !symmetryPlane.inPlaceMode()) {
-                    if (this.getBuildToolsManager().isSelectMode()) {
-                        return 0;
-                    } else if (this.getBuildToolsManager().selectionPlaced) {
-                        this.getBuildToolsManager().selectionPlaced = false;
-                        return 0;
-                    } else if (this.getState().getPlayer().getInventory((Vector3i)null).isSlotEmpty(this.selectedSlot)) {
-                        if (!symmetryPlane.inPlaceMode()) {
-                            this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_12, 0.0F);
-                        }
-
-                        return 0;
-                    } else {
-                        assert this.getState().getPlayer().getInventory((Vector3i)null).getCount(this.selectedSlot, var8) > 0 : ElementKeyMap.toString(var8);
-
-                        int var20 = this.getState().getPlayer().getInventory((Vector3i)null).getCount(this.selectedSlot, var8);
-
-                        String var23;
-                        try {
-                            ElementInformation var22 = ElementKeyMap.getInfo(var8);
-                            PlayerContextHelpDialog var29;
-                            if (var1.isUsingOldPower() && (var22.isReactorChamberAny() || var22.getId() == 1008 || var22.getId() == 1010 || var22.getId() == 1009)) {
-                                var23 = StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_77, new Object[]{var1.getElementClassCountMap().get((short)2) + var1.getElementClassCountMap().get((short)331)});
-                                if (var1.isDocked()) {
-                                    var23 = Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_80;
-                                }
-
-                                (var29 = new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACED_NEW_REACTOR_ON_OLD_SHIP, var23, true)).ignoreToggle = false;
-                                var29.activate();
-                                return 0;
+                    SegmentPiece var26;
+                    if (var8 != 0 && !symmetryPlane.inPlaceMode()) {
+                        if (this.getBuildToolsManager().isSelectMode()) {
+                            return 0;
+                        } else if (this.getBuildToolsManager().selectionPlaced) {
+                            this.getBuildToolsManager().selectionPlaced = false;
+                            return 0;
+                        } else if (this.getState().getPlayer().getInventory((Vector3i) null).isSlotEmpty(this.selectedSlot)) {
+                            if (!symmetryPlane.inPlaceMode()) {
+                                this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_12, 0.0F);
                             }
 
-                            if (var1.hasAnyReactors() && (var22.getId() == 2 || var22.getId() == 331)) {
-                                (var29 = new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACED_OLD_POWER_ON_NEW_SHIP, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_79, true)).ignoreToggle = false;
-                                var29.activate();
-                                return 0;
-                            }
+                            return 0;
+                        } else {
+                            assert this.getState().getPlayer().getInventory((Vector3i) null).getCount(this.selectedSlot, var8) > 0 : ElementKeyMap.toString(var8);
 
-                            if ((var22.isReactorChamberAny() || var22.getId() == 1008 || var22.getId() == 1010) && var1 instanceof ManagedSegmentController && ((ManagedSegmentController)var1).getManagerContainer().getPowerInterface().isAnyRebooting()) {
-                                this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_68);
-                                return 0;
-                            }
+                            int var20 = this.getState().getPlayer().getInventory((Vector3i) null).getCount(this.selectedSlot, var8);
 
-                            if (EngineSettings.CONTEXT_HELP_STABILIZER_EFFICIENCY_PLACE.isOn() && var8 == 1009 && BuildModeDrawer.currentStabEfficiency < 1.0D) {
-                                var23 = StringTools.formatPointZero(BuildModeDrawer.currentStabEfficiency * 100.0D);
-                                (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_STABILIZER_EFFICIENCY_PLACE, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_66, new Object[]{var23}), true)).activate();
-                                return 0;
-                            }
-
-                            if (EngineSettings.CONTEXT_HELP_PLACE_MODULE_WITHOUT_COMPUTER_WARNING.isOn()) {
-                                var26 = this.getSelectedBlockByActiveController();
-                                if (var22.needsComputer()) {
-                                    if (var26 == null || var22.getComputer() != var26.getType()) {
-                                        (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_MODULE_WITHOUT_COMPUTER_WARNING, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_62, new Object[]{ElementKeyMap.getInfoFast(var22.getComputer()).getName(), KeyboardMappings.SELECT_MODULE.getKeyChar()}), true)).activate();
-                                        return 0;
+                            String var23;
+                            try {
+                                ElementInformation var22 = ElementKeyMap.getInfo(var8);
+                                PlayerContextHelpDialog var29;
+                                if (var1.isUsingOldPower() && (var22.isReactorChamberAny() || var22.getId() == 1008 || var22.getId() == 1010 || var22.getId() == 1009)) {
+                                    var23 = StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_77, new Object[]{var1.getElementClassCountMap().get((short) 2) + var1.getElementClassCountMap().get((short) 331)});
+                                    if (var1.isDocked()) {
+                                        var23 = Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_80;
                                     }
-                                } else if (var22.getId() == 689 && (var26 == null || !ElementKeyMap.isValidType(var26.getType()) || !ElementKeyMap.getInfoFast(var26.getType()).isInventory())) {
-                                    (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_MODULE_WITHOUT_COMPUTER_WARNING, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_63, new Object[]{ElementKeyMap.getInfoFast((short)120).getName(), KeyboardMappings.SELECT_MODULE.getKeyChar()}), true)).activate();
+
+                                    (var29 = new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACED_NEW_REACTOR_ON_OLD_SHIP, var23, true)).ignoreToggle = false;
+                                    var29.activate();
                                     return 0;
                                 }
-                            }
 
-                            if (EngineSettings.CONTEXT_HELP_PLACE_REACTOR_WITH_LOW_STABILIZATION.isOn() && var22.id == 1008 && var1 instanceof ManagedSegmentController && ((ManagedSegmentController)var1).getManagerContainer().getPowerInterface().getStabilizerEfficiencyTotal() < 0.5D) {
-                                (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_REACTOR_WITH_LOW_STABILIZATION, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_69, true)).activate();
-                                return 0;
-                            }
-
-                            final short finalVar = var8;
-                            if (EngineSettings.CONTEXT_HELP_PLACE_CHAMBER_WITHOUT_CONDUIT_WARNING.isOn() && var22.isReactorChamberGeneral() && !this.surroundCondition(var1, var2, var3, var7, var10, new PlayerInteractionControlManager.SurroundBlockCondition() {
-                                public boolean ok(ElementInformation var1) {
-                                    System.err.println(var1 + " INFO SPEC " + var1.isReactorChamberSpecific() + "; placing " + ElementKeyMap.toString(finalVar) + "; block root: " + var1.chamberRoot + "; " + var1.isReactorChamberGeneral() + "; " + finalVar + "; " + var1.id);
-                                    return var1.id == 1010 || var1.isReactorChamberGeneral() && finalVar == var1.getId() || var1.isReactorChamberSpecific() && finalVar == var1.chamberRoot;
-                                }
-                            })) {
-                                (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_CHAMBER_WITHOUT_CONDUIT_WARNING, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_70, true)).activate();
-                                return 0;
-                            }
-
-                            if (EngineSettings.CONTEXT_HELP_PLACE_CONDIUT_WITHOUT_CHAMBER_OR_MAIN_WARNING.isOn() && var22.id == 1010 && !this.surroundCondition(var1, var2, var3, var7, var10, new PlayerInteractionControlManager.SurroundBlockCondition() {
-                                public boolean ok(ElementInformation var1) {
-                                    return var1.id == 1010 || var1.id == 1008 || var1.isReactorChamberAny();
-                                }
-                            })) {
-                                (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_CONDIUT_WITHOUT_CHAMBER_OR_MAIN_WARNING, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_71, new Object[]{KeyboardMappings.ACTIVATE.getKeyChar()}), true)).activate();
-                                return 0;
-                            }
-
-                            if (var22.getBlockStyle() != BlockStyle.NORMAL) {
-                                System.err.println("[CLIENT] BLOCK style: " + var22.getBlockStyle() + "; ORIENTATION: " + this.getBlockOrientation() + "; " + BlockShapeAlgorithm.algorithms[var22.getBlockStyle().id - 1][this.getBlockOrientation()].toString());
-                            }
-
-                            BlockOrientation var28 = ElementInformation.convertOrientation(var22, (byte)this.getBlockOrientation());
-                            BuildHelper var25 = null;
-                            if (this.getBuildToolsManager().getBuildHelper() != null && this.getBuildToolsManager().buildHelperReplace) {
-                                var25 = this.getBuildToolsManager().getBuildHelper();
-                            }
-
-                            BuildInstruction var24 = new BuildInstruction(var1);
-                            int var19;
-                            if ((var19 = var1.getNearestIntersection(var8, var2, var3, var4, var28.blockOrientation, var28.activateBlock, var5, var10, var20, var7, symmetryPlane, var25, var24)) > 0) {
-                                this.undo.add(0, var24);
-
-                                while(this.undo.size() > (Integer)EngineSettings.B_UNDO_REDO_MAX.getCurrentState()) {
-                                    this.undo.remove(this.undo.size() - 1);
+                                if (var1.hasAnyReactors() && (var22.getId() == 2 || var22.getId() == 331)) {
+                                    (var29 = new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACED_OLD_POWER_ON_NEW_SHIP, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_79, true)).ignoreToggle = false;
+                                    var29.activate();
+                                    return 0;
                                 }
 
-                                this.redo.clear();
-                                this.getState().getController().queueUIAudio("0022_action - buttons push big");
-                                if (var8 == 56) {
-                                    this.getState().getController().popupInfoTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_13, new Object[]{KeyboardMappings.ACTIVATE.getKeyChar()}), 0.0F);
+                                if ((var22.isReactorChamberAny() || var22.getId() == 1008 || var22.getId() == 1010) && var1 instanceof ManagedSegmentController && ((ManagedSegmentController) var1).getManagerContainer().getPowerInterface().isAnyRebooting()) {
+                                    this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_68);
+                                    return 0;
                                 }
 
-                                return var19;
-                            }
-                        } catch (ElementPositionBlockedException var18) {
-                            var23 = Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_14;
-                            if (var18.userData != null) {
-                                if (var18.userData instanceof SegmentController) {
-                                    var23 = ((SegmentController)var18.userData).getRealName();
-                                } else if (var18.userData instanceof SimpleTransformableSendableObject) {
-                                    var23 = ((SimpleTransformableSendableObject)var18.userData).toNiceString();
-                                } else if (var18.userData instanceof String) {
-                                    var23 = (String)var18.userData;
+                                if (EngineSettings.CONTEXT_HELP_STABILIZER_EFFICIENCY_PLACE.isOn() && var8 == 1009 && BuildModeDrawer.currentStabEfficiency < 1.0D) {
+                                    var23 = StringTools.formatPointZero(BuildModeDrawer.currentStabEfficiency * 100.0D);
+                                    (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_STABILIZER_EFFICIENCY_PLACE, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_66, new Object[]{var23}), true)).activate();
+                                    return 0;
                                 }
+
+                                if (EngineSettings.CONTEXT_HELP_PLACE_MODULE_WITHOUT_COMPUTER_WARNING.isOn()) {
+                                    var26 = this.getSelectedBlockByActiveController();
+                                    if (var22.needsComputer()) {
+                                        if (var26 == null || var22.getComputer() != var26.getType()) {
+                                            (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_MODULE_WITHOUT_COMPUTER_WARNING, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_62, new Object[]{ElementKeyMap.getInfoFast(var22.getComputer()).getName(), KeyboardMappings.SELECT_MODULE.getKeyChar()}), true)).activate();
+                                            return 0;
+                                        }
+                                    } else if (var22.getId() == 689 && (var26 == null || !ElementKeyMap.isValidType(var26.getType()) || !ElementKeyMap.getInfoFast(var26.getType()).isInventory())) {
+                                        (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_MODULE_WITHOUT_COMPUTER_WARNING, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_63, new Object[]{ElementKeyMap.getInfoFast((short) 120).getName(), KeyboardMappings.SELECT_MODULE.getKeyChar()}), true)).activate();
+                                        return 0;
+                                    }
+                                }
+
+                                if (EngineSettings.CONTEXT_HELP_PLACE_REACTOR_WITH_LOW_STABILIZATION.isOn() && var22.id == 1008 && var1 instanceof ManagedSegmentController && ((ManagedSegmentController) var1).getManagerContainer().getPowerInterface().getStabilizerEfficiencyTotal() < 0.5D) {
+                                    (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_REACTOR_WITH_LOW_STABILIZATION, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_69, true)).activate();
+                                    return 0;
+                                }
+
+                                final short finalVar = var8;
+                                if (EngineSettings.CONTEXT_HELP_PLACE_CHAMBER_WITHOUT_CONDUIT_WARNING.isOn() && var22.isReactorChamberGeneral() && !this.surroundCondition(var1, var2, var3, var7, var10, new PlayerInteractionControlManager.SurroundBlockCondition() {
+                                    public boolean ok(ElementInformation var1) {
+                                        System.err.println(var1 + " INFO SPEC " + var1.isReactorChamberSpecific() + "; placing " + ElementKeyMap.toString(finalVar) + "; block root: " + var1.chamberRoot + "; " + var1.isReactorChamberGeneral() + "; " + finalVar + "; " + var1.id);
+                                        return var1.id == 1010 || var1.isReactorChamberGeneral() && finalVar == var1.getId() || var1.isReactorChamberSpecific() && finalVar == var1.chamberRoot;
+                                    }
+                                })) {
+                                    (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_CHAMBER_WITHOUT_CONDUIT_WARNING, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_70, true)).activate();
+                                    return 0;
+                                }
+
+                                if (EngineSettings.CONTEXT_HELP_PLACE_CONDIUT_WITHOUT_CHAMBER_OR_MAIN_WARNING.isOn() && var22.id == 1010 && !this.surroundCondition(var1, var2, var3, var7, var10, new PlayerInteractionControlManager.SurroundBlockCondition() {
+                                    public boolean ok(ElementInformation var1) {
+                                        return var1.id == 1010 || var1.id == 1008 || var1.isReactorChamberAny();
+                                    }
+                                })) {
+                                    (new PlayerContextHelpDialog(this.getState(), EngineSettings.CONTEXT_HELP_PLACE_CONDIUT_WITHOUT_CHAMBER_OR_MAIN_WARNING, StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_71, new Object[]{KeyboardMappings.ACTIVATE.getKeyChar()}), true)).activate();
+                                    return 0;
+                                }
+
+                                if (var22.getBlockStyle() != BlockStyle.NORMAL) {
+                                    System.err.println("[CLIENT] BLOCK style: " + var22.getBlockStyle() + "; ORIENTATION: " + this.getBlockOrientation() + "; " + BlockShapeAlgorithm.algorithms[var22.getBlockStyle().id - 1][this.getBlockOrientation()].toString());
+                                }
+
+                                BlockOrientation var28 = ElementInformation.convertOrientation(var22, (byte) this.getBlockOrientation());
+                                BuildHelper var25 = null;
+                                if (this.getBuildToolsManager().getBuildHelper() != null && this.getBuildToolsManager().buildHelperReplace) {
+                                    var25 = this.getBuildToolsManager().getBuildHelper();
+                                }
+
+                                BuildInstruction var24 = new BuildInstruction(var1);
+                                int var19;
+                                if ((var19 = var1.getNearestIntersection(var8, var2, var3, var4, var28.blockOrientation, var28.activateBlock, var5, var10, var20, var7, symmetryPlane, var25, var24)) > 0) {
+                                    this.undo.add(0, var24);
+
+                                    while (this.undo.size() > (Integer) EngineSettings.B_UNDO_REDO_MAX.getCurrentState()) {
+                                        this.undo.remove(this.undo.size() - 1);
+                                    }
+
+                                    this.redo.clear();
+                                    this.getState().getController().queueUIAudio("0022_action - buttons push big");
+                                    if (var8 == 56) {
+                                        this.getState().getController().popupInfoTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_13, new Object[]{KeyboardMappings.ACTIVATE.getKeyChar()}), 0.0F);
+                                    }
+
+                                    return var19;
+                                }
+                            } catch (ElementPositionBlockedException var18) {
+                                var23 = Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_14;
+                                if (var18.userData != null) {
+                                    if (var18.userData instanceof SegmentController) {
+                                        var23 = ((SegmentController) var18.userData).getRealName();
+                                    } else if (var18.userData instanceof SimpleTransformableSendableObject) {
+                                        var23 = ((SimpleTransformableSendableObject) var18.userData).toNiceString();
+                                    } else if (var18.userData instanceof String) {
+                                        var23 = (String) var18.userData;
+                                    }
+                                }
+
+                                this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_15, new Object[]{var23}), 0.0F);
+                            } catch (BlockedByDockedElementException var19) {
+                                this.getState().getWorldDrawer().getBuildModeDrawer().addBlockedDockIndicator(var19.to, (SegmentController) null, (DockingBlockCollectionManager) null);
+                                this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_16, 0.0F);
+                            } catch (BlockNotBuildTooFast var21) {
+                                this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_17, 0.0F);
                             }
 
-                            this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_15, new Object[]{var23}), 0.0F);
-                        } catch (BlockedByDockedElementException var19) {
-                            this.getState().getWorldDrawer().getBuildModeDrawer().addBlockedDockIndicator(var19.to, (SegmentController)null, (DockingBlockCollectionManager)null);
-                            this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_16, 0.0F);
-                        } catch (BlockNotBuildTooFast var21) {
-                            this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_17, 0.0F);
+                            return 0;
                         }
+                    } else {
+                        if (!symmetryPlane.inPlaceMode()) {
+                            this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_11, 0.0F);
+                        } else {
+                            Vector3f var11;
+                            try {
+                                BuildInstruction var12 = new BuildInstruction(var1);
+                                if (this.getBuildToolsManager().isCopyMode() || this.getBuildToolsManager().getBuildHelper() != null && !this.getBuildToolsManager().getBuildHelper().placed) {
+                                    var26 = var1.getNearestPiece(var2, var3, var7, var10, var10);
+                                } else {
+                                    var26 = var1.getNextToNearestPiece(var2, var3, new Vector3i(), var7, new Vector3i(), new Vector3i());
+                                }
+
+                                if (var26 != null) {
+                                    Vector3i var13 = var26.getAbsolutePos(new Vector3i());
+                                    SymmetryMode symmetryMode = symmetryPlane.getMode();
+                                    switch (symmetryMode) {
+                                        case XY:
+                                            symmetryPlane.getPlane().z = var13.z;
+                                            symmetryPlane.setPlaceMode(false);
+                                            symmetryPlane.setEnabled(true);
+                                            break;
+                                        case XZ:
+                                            symmetryPlane.getPlane().y = var13.y;
+                                            symmetryPlane.setPlaceMode(false);
+                                            symmetryPlane.setEnabled(true);
+                                            break;
+                                        case YZ:
+                                            symmetryPlane.getPlane().x = var13.x;
+                                            symmetryPlane.setPlaceMode(false);
+                                            symmetryPlane.setEnabled(true);
+                                            break;
+                                        case COPY:
+                                            if (this.buildToolsManager.isSelectMode()) {
+                                                System.out.println("COPY Case mode_copy");
+                                            } else {
+                                                if (this.getBuildToolsManager().selectionPlaced) {
+                                                    System.out.println("COPY Case mode_copy no sel");
+                                                    this.getBuildToolsManager().selectionPlaced = false;
+                                                    return 0;
+                                                }
+
+                                                System.err.println("[CLIENT] COPY AREA SET " + var13);
+                                                this.getBuildToolsManager().setCopyArea(var1, var13, var10);
+                                                this.getBuildToolsManager().setCopyMode(false);
+                                                symmetryPlane.setPlaceMode(false);
+                                            }
+
+                                            return 0;
+                                        case PASTE:
+                                            if (this.getBuildToolsManager().canPaste()) {
+                                                this.getBuildToolsManager().getCopyArea().build(var1, var13, var12, symmetryPlane);
+                                                this.undo.add(0, var12);
+
+                                                while (this.undo.size() > (Integer) EngineSettings.B_UNDO_REDO_MAX.getCurrentState()) {
+                                                    this.undo.remove(this.undo.size() - 1);
+                                                }
+                                            }
+                                        case PLACE:
+                                            if (this.getBuildToolsManager().getBuildHelper() != null) {
+                                                this.getBuildToolsManager().getBuildHelper().placed = true;
+                                                var11 = new Vector3f((float) (var13.x - 16), (float) (var13.y - 16), (float) (var13.z - 16));
+                                                this.getBuildToolsManager().getBuildHelper().localTransform.origin.set(var11);
+                                                this.getBuildToolsManager().getBuildHelper().placedPos = new Vector3i(var13);
+                                            }
+                                    }
+
+                                    symmetryPlane.setPlaceMode(false);
+                                    this.getBuildToolsManager().setCopyMode(false);
+                                } else {
+                                    System.err.println("[CLIENT] NO NEAREST PIECE TO BUILD ON");
+                                }
+                            } catch (ElementPositionBlockedException var21) {
+                                var11 = null;
+                                var21.printStackTrace();
+                            } catch (BlockNotBuildTooFast var22) {
+                                var11 = null;
+                                var22.printStackTrace();
+                            }
+                        }
+
 
                         return 0;
                     }
-                } else {
-                    if (!symmetryPlane.inPlaceMode()) {
-                        this.getState().getController().popupInfoTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_11, 0.0F);
-                    } else {
-                        Vector3f var11;
-                        try {
-                            boolean var21 = symmetryPlane.inPlaceMode();
-                            BuildInstruction var12 = new BuildInstruction(var1);
-                            if (this.getBuildToolsManager().isCopyMode() || this.getBuildToolsManager().getBuildHelper() != null && !this.getBuildToolsManager().getBuildHelper().placed) {
-                                var26 = var1.getNearestPiece(var2, var3, var7, var10, var10);
-                            } else {
-                                var26 = var1.getNextToNearestPiece(var2, var3, new Vector3i(), var7, new Vector3i(), new Vector3i());
-                            }
-
-                            if (var21 && var26 != null) {
-                                Vector3i var13 = var26.getAbsolutePos(new Vector3i());
-                                SymmetryMode symmetryMode = symmetryPlane.getMode();
-                                switch(symmetryMode) {
-                                    case XY:
-                                        symmetryPlane.getPlane().z = var13.z;
-                                        symmetryPlane.setEnabled(true);
-                                        break;
-                                    case XZ:
-                                        symmetryPlane.getPlane().y = var13.y;
-                                        symmetryPlane.setEnabled(true);
-                                        break;
-                                    case YZ:
-                                        symmetryPlane.getPlane().x = var13.x;
-                                        symmetryPlane.setEnabled(true);
-                                        break;
-                                    case COPY:
-                                        if (this.buildToolsManager.isSelectMode()) {
-                                            System.out.println("COPY Case mode_copy");
-                                        } else {
-                                            if (this.getBuildToolsManager().selectionPlaced) {
-                                                System.out.println("COPY Case mode_copy no sel");
-                                                this.getBuildToolsManager().selectionPlaced = false;
-                                                return 0;
-                                            }
-
-                                            System.err.println("[CLIENT] COPY AREA SET " + var13);
-                                            this.getBuildToolsManager().setCopyArea(var1, var13, var10);
-                                            this.getBuildToolsManager().setCopyMode(false);
-                                            symmetryPlane.setPlaceMode(false);
-                                            this.getPlayerCharacterManager().setPlaceMode(false);
-                                        }
-
-                                        return 0;
-                                    case PASTE:
-                                        if (this.getBuildToolsManager().canPaste()) {
-                                            this.getBuildToolsManager().getCopyArea().build(var1, var13, var12, symmetryPlane);
-                                            this.undo.add(0, var12);
-
-                                            while(this.undo.size() > (Integer)EngineSettings.B_UNDO_REDO_MAX.getCurrentState()) {
-                                                this.undo.remove(this.undo.size() - 1);
-                                            }
-                                        }
-                                    case PLACE:
-                                        if (this.getBuildToolsManager().getBuildHelper() != null) {
-                                            this.getBuildToolsManager().getBuildHelper().placed = true;
-                                            var11 = new Vector3f((float)(var13.x - 16), (float)(var13.y - 16), (float)(var13.z - 16));
-                                            this.getBuildToolsManager().getBuildHelper().localTransform.origin.set(var11);
-                                            this.getBuildToolsManager().getBuildHelper().placedPos = new Vector3i(var13);
-                                        }
-                                }
-
-                                symmetryPlane.setPlaceMode(false);
-                                this.getBuildToolsManager().setCopyMode(false);
-                            } else {
-                                System.err.println("[CLIENT] NO NEAREST PIECE TO BUILD ON");
-                            }
-                        } catch (ElementPositionBlockedException var21) {
-                            var11 = null;
-                            var21.printStackTrace();
-                        } catch (BlockNotBuildTooFast var22) {
-                            var11 = null;
-                            var22.printStackTrace();
-                        }
-                    }
-
-
-                    return 0;
                 }
-            }
         }
         return 0;
     }
@@ -1606,89 +1606,91 @@ public class PlayerInteractionControlManager extends AbstractControlManager {
                 this.getState().getController().popupAlertTextMessage("ERROR\n \nCan't do that!\nYou are a spectator!", 0.0F);
             } else {
                 for (SymmetryPlane symmetryPlane : BetterBuilding.getInstance().getAllPlanes()) {
-                    short var9 = 0;
-                    if (var7 == 32767 && this.getBuildToolsManager().getRemoveFilter() != 0) {
-                        var7 = this.getBuildToolsManager().getRemoveFilter();
-                        short var10;
-                        if (this.getBuildToolsManager().isReplaceRemoveFilter() && ElementKeyMap.isValidType(var10 = this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getSelectedTypeWithSub())) {
-                            System.err.println("[CLIENT] Replace filter: replace: " + ElementKeyMap.toString(var7) + " with " + ElementKeyMap.toString(var10));
-                            var9 = var10;
-                        }
-                    }
-
-                    BuildHelper var13 = null;
-                    if (this.getBuildToolsManager().getBuildHelper() != null && this.getBuildToolsManager().buildHelperReplace) {
-                        var13 = this.getBuildToolsManager().getBuildHelper();
-                    }
-
-                    Vector3i var11 = new Vector3i(1, 1, 1);
-                    if (isAdvancedBuildMode(this.getState())) {
-                        var11.set(this.getBuildToolsManager().getSize());
-                    }
-
-                    if (var1.getHpController().isRebooting()) {
-                        this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_55, new Object[]{StringTools.formatTimeFromMS(var1.getHpController().getRebootTimeLeftMS())}), 0.0F);
-                    } else {
-                        if (var1.hasStructureAndArmorHP() && var1.getHpController().getHpPercent() < 1.0D && !this.warned.contains(var1.getId())) {
-                            this.warned.add(var1.getId());
-                            PlayerGameOkCancelInput var12;
-                            (var12 = new PlayerGameOkCancelInput("CONFIRM", this.getState(), Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_56, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_44) {
-                                public boolean isOccluded() {
-                                    return false;
-                                }
-
-                                public void onDeactivate() {
-                                }
-
-                                public void pressedOK() {
-                                    this.deactivate();
-                                    PlayerInteractionControlManager.this.getInShipControlManager().popupShipRebootDialog(var1);
-                                }
-                            }).getInputPanel().onInit();
-                            var12.getInputPanel().setOkButtonText(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_57);
-                            var12.getInputPanel().setCancelButtonText(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_50);
-                            var12.activate();
-                        }
-
-                        if (var1.isScrap()) {
-                            this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_59, new Object[]{KeyboardMappings.SPAWN_SPACE_STATION.getKeyChar()}), 0.0F);
-                        }
-
-                        BuildInstruction var14 = new BuildInstruction(var1);
-                        this.moddedSegs.clear();
-                        var1.getNearestIntersectingElementPosition(var2, var3, var11, var5, new BuildRemoveCallback() {
-                            public void onRemove(long var1x, short var3) {
-                                var8.onRemove(var1x, var3);
+                    if (symmetryPlane.isEnabled()) {
+                        short var9 = 0;
+                        if (var7 == 32767 && this.getBuildToolsManager().getRemoveFilter() != 0) {
+                            var7 = this.getBuildToolsManager().getRemoveFilter();
+                            short var10;
+                            if (this.getBuildToolsManager().isReplaceRemoveFilter() && ElementKeyMap.isValidType(var10 = this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getSelectedTypeWithSub())) {
+                                System.err.println("[CLIENT] Replace filter: replace: " + ElementKeyMap.toString(var7) + " with " + ElementKeyMap.toString(var10));
+                                var9 = var10;
                             }
+                        }
 
-                            public boolean canRemove(short var1x) {
-                                ElementInformation var2;
-                                if (ElementKeyMap.isValidType(var1x) && ((var2 = ElementKeyMap.getInfo(var1x)).isReactorChamberAny() || var2.getId() == 1008) && var1 instanceof ManagedSegmentController && ((ManagedSegmentController) var1).getManagerContainer().getPowerInterface().isAnyRebooting()) {
-                                    PlayerInteractionControlManager.this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_67);
-                                    return false;
-                                } else {
-                                    boolean var3;
-                                    if (!(var3 = PlayerInteractionControlManager.this.getState().getPlayer().getInventory().canPutIn(var1x, 1))) {
-                                        PlayerInteractionControlManager.this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_60, 0.0F);
+                        BuildHelper var13 = null;
+                        if (this.getBuildToolsManager().getBuildHelper() != null && this.getBuildToolsManager().buildHelperReplace) {
+                            var13 = this.getBuildToolsManager().getBuildHelper();
+                        }
+
+                        Vector3i var11 = new Vector3i(1, 1, 1);
+                        if (isAdvancedBuildMode(this.getState())) {
+                            var11.set(this.getBuildToolsManager().getSize());
+                        }
+
+                        if (var1.getHpController().isRebooting()) {
+                            this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_55, new Object[]{StringTools.formatTimeFromMS(var1.getHpController().getRebootTimeLeftMS())}), 0.0F);
+                        } else {
+                            if (var1.hasStructureAndArmorHP() && var1.getHpController().getHpPercent() < 1.0D && !this.warned.contains(var1.getId())) {
+                                this.warned.add(var1.getId());
+                                PlayerGameOkCancelInput var12;
+                                (var12 = new PlayerGameOkCancelInput("CONFIRM", this.getState(), Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_56, Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_44) {
+                                    public boolean isOccluded() {
+                                        return false;
                                     }
 
-                                    return var3;
+                                    public void onDeactivate() {
+                                    }
+
+                                    public void pressedOK() {
+                                        this.deactivate();
+                                        PlayerInteractionControlManager.this.getInShipControlManager().popupShipRebootDialog(var1);
+                                    }
+                                }).getInputPanel().onInit();
+                                var12.getInputPanel().setOkButtonText(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_57);
+                                var12.getInputPanel().setCancelButtonText(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_50);
+                                var12.activate();
+                            }
+
+                            if (var1.isScrap()) {
+                                this.getState().getController().popupAlertTextMessage(StringTools.format(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_59, new Object[]{KeyboardMappings.SPAWN_SPACE_STATION.getKeyChar()}), 0.0F);
+                            }
+
+                            BuildInstruction var14 = new BuildInstruction(var1);
+                            this.moddedSegs.clear();
+                            var1.getNearestIntersectingElementPosition(var2, var3, var11, var5, new BuildRemoveCallback() {
+                                public void onRemove(long var1x, short var3) {
+                                    var8.onRemove(var1x, var3);
                                 }
+
+                                public boolean canRemove(short var1x) {
+                                    ElementInformation var2;
+                                    if (ElementKeyMap.isValidType(var1x) && ((var2 = ElementKeyMap.getInfo(var1x)).isReactorChamberAny() || var2.getId() == 1008) && var1 instanceof ManagedSegmentController && ((ManagedSegmentController) var1).getManagerContainer().getPowerInterface().isAnyRebooting()) {
+                                        PlayerInteractionControlManager.this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_67);
+                                        return false;
+                                    } else {
+                                        boolean var3;
+                                        if (!(var3 = PlayerInteractionControlManager.this.getState().getPlayer().getInventory().canPutIn(var1x, 1))) {
+                                            PlayerInteractionControlManager.this.getState().getController().popupAlertTextMessage(Lng.ORG_SCHEMA_GAME_CLIENT_CONTROLLER_MANAGER_INGAME_PLAYERINTERACTIONCONTROLMANAGER_60, 0.0F);
+                                        }
+
+                                        return var3;
+                                    }
+                                }
+
+                                public long getSelectedControllerPos() {
+                                    return var4 != null ? var4.getAbsoluteIndex() : -9223372036854775808L;
+                                }
+                            }, symmetryPlane, var7, var9, var13, var14, this.moddedSegs);
+                            this.moddedSegs.clear();
+                            this.getState().getController().queueUIAudio("0022_action - buttons push medium");
+                            this.undo.add(0, var14);
+
+                            while (this.undo.size() > (Integer) EngineSettings.B_UNDO_REDO_MAX.getCurrentState()) {
+                                this.undo.remove(this.undo.size() - 1);
                             }
 
-                            public long getSelectedControllerPos() {
-                                return var4 != null ? var4.getAbsoluteIndex() : -9223372036854775808L;
-                            }
-                        }, symmetryPlane, var7, var9, var13, var14, this.moddedSegs);
-                        this.moddedSegs.clear();
-                        this.getState().getController().queueUIAudio("0022_action - buttons push medium");
-                        this.undo.add(0, var14);
-
-                        while (this.undo.size() > (Integer) EngineSettings.B_UNDO_REDO_MAX.getCurrentState()) {
-                            this.undo.remove(this.undo.size() - 1);
+                            this.redo.clear();
                         }
-
-                        this.redo.clear();
                     }
                 }
             }

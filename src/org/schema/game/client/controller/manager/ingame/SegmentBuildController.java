@@ -261,31 +261,12 @@ public class SegmentBuildController extends AbstractBuildControlManager {
         return this.selectedBlock;
     }
 
-    public ArrayList<SymmetryPlane> getXYPlanes() {
-        return BetterBuilding.getInstance().xyPlanes;
-    }
-
-    public ArrayList<SymmetryPlane> getXZPlanes() {
-        return BetterBuilding.getInstance().xzPlanes;
-    }
-
-    public ArrayList<SymmetryPlane> getYZPlanes() {
-        return BetterBuilding.getInstance().yzPlanes;
-    }
-
-    public ArrayList<SymmetryPlane> getAllSymmetryPlanes() {
-        try {
-            return BetterBuilding.getInstance().getAllPlanes();
-        } catch (Exception ignored) { }
-        return new ArrayList<>();
-    }
-
     public SymmetryPlanes getSymmetryPlanes() {
         return this.getState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager().getSymmetryPlanes();
     }
 
     public void setPlaceMode(boolean placeMode) {
-        for(SymmetryPlane symmetryPlane : getAllSymmetryPlanes()) {
+        for(SymmetryPlane symmetryPlane : BetterBuilding.getInstance().getAllPlanes()) {
             symmetryPlane.setPlaceMode(placeMode);
         }
     }

@@ -247,16 +247,19 @@ public abstract class EditableSendableSegmentController extends SendableSegmentC
                         case XY:
                             System.err.println("SYM XY PLANE SET");
                             var11.getPlane().z = var22.z;
+                            var11.setPlaceMode(false);
                             var11.setEnabled(true);
                             break;
                         case XZ:
                             System.err.println("SYM XZ PLANE SET");
                             var11.getPlane().y = var22.y;
+                            var11.setPlaceMode(false);
                             var11.setEnabled(true);
                             break;
                         case YZ:
                             System.err.println("SYM YZ PLANE SET");
                             var11.getPlane().x = var22.x;
+                            var11.setPlaceMode(false);
                             var11.setEnabled(true);
                             break;
                     }
