@@ -2,7 +2,7 @@
   "name": "BetterBuilding",
   "author": "TheDerpGamer",
   "description": "A small mod with helpful building tools and utilities",
-  "version": "1.2.10",
+  "version": "1.3.3",
   "starmade_version": "0.202.108",
   "client_mod": true,
   "server_mod": false,
@@ -11,6 +11,7 @@
   "dependencies": [
     -1
   ],
-  "core_mod": true,
-  "requires_class_resize": true
+  "core_mod": false,
+  "requires_class_resize": false,
+  "hard_load_all_classes": false
 }

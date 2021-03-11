@@ -8,27 +8,18 @@ import api.mod.StarLoader;
 import api.mod.StarMod;
 import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
-import net.thederpgamer.betterbuilding.gui.advancedbuildmode.symmetry.SymmetryPlane;
 import net.thederpgamer.betterbuilding.util.HotbarUtils;
-import org.apache.commons.io.IOUtils;
-import org.schema.game.client.data.GameClientState;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.schine.input.Keyboard;
 import org.schema.schine.input.KeyboardMappings;
 import javax.vecmath.Vector2f;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 /**
  * BetterBuilding.java
  * Main class for BetterBuilding StarMade mod
  * ==================================================
  * Created 01/21/2021
- *
  * @author TheDerpGamer
  */
 public class BetterBuilding extends StarMod {
@@ -40,33 +31,21 @@ public class BetterBuilding extends StarMod {
 
     //Data
     public BuildHotbar buildHotbar;
-    public boolean autoSaveTimerStarted = false;
-
-    private ArrayList<SymmetryPlane> xyPlanes = new ArrayList<>();
-    private ArrayList<SymmetryPlane> xzPlanes = new ArrayList<>();
-    private ArrayList<SymmetryPlane> yzPlanes = new ArrayList<>();
 
     //Config
     private String[] defaultConfig = {
             "debug-mode: false",
             "hotbar-pos: 1038, 627",
-            "auto-save-interval: 3500",
-            "max-symmetry-planes: 5"
+            "hotbar-save-interval: 3500",
+            "global-hotbars: false"
     };
     public boolean debugMode = false;
     public Vector2f hotbarPos = new Vector2f(1038, 627);
-    public int autoSaveInterval = 3500;
-    public int maxSymmetryPlanes = 5;
+    public int hotbarSaveInterval = 3500;
+    public boolean globalHotbars = false;
 
     public static BetterBuilding getInstance() {
         return instance;
-    }
-
-    @Override
-    public void onLoad() {
-        forceDefine("org.schema.game.client.view.BuildModeDrawer$2");
-        forceDefine("org.schema.game.client.controller.manager.ingame.PlayerInteractionControlManager$13");
-        forceDefine("org.schema.game.common.controller.EditableSendableSegmentController$7");
     }
 
     @Override
@@ -77,18 +56,6 @@ public class BetterBuilding extends StarMod {
         HotbarUtils.initialize();
     }
 
-    @Override
-    public byte[] onClassTransform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] byteCode) {
-        if (className.endsWith("AdvancedBuildMode") || className.endsWith("BuildModeDrawer") || className.endsWith("BuildSelection") ||
-                className.endsWith("CopyArea") || className.endsWith("SegmentBuildController") ||
-                className.endsWith("PlayerExternalController") || className.endsWith("PlayerInteractionControlManager") ||
-                className.endsWith("EditableSendableSegmentController") || className.endsWith("AdvancedBuildModeGUISGroup")) {
-            return overwriteClass(className, byteCode);
-        } else {
-            return super.onClassTransform(loader, className, classBeingRedefined, protectionDomain, byteCode);
-        }
-    }
-
     private void loadConfig() {
         FileConfiguration config = getConfig("config");
         config.saveDefault(defaultConfig);
@@ -96,8 +63,8 @@ public class BetterBuilding extends StarMod {
         debugMode = config.getConfigurableBoolean("debug-mode", false);
         String[] posString = config.getConfigurableValue("hotbar-pos", "1038, 627").split(", ");
         hotbarPos = new Vector2f(Float.parseFloat(posString[0]), Float.parseFloat(posString[1]));
-        autoSaveInterval = config.getConfigurableInt("auto-save-interval", 3500);
-        maxSymmetryPlanes = config.getConfigurableInt("max-symmetry-planes", 5);
+        hotbarSaveInterval = config.getConfigurableInt("hotbar-save-interval", 3500);
+        globalHotbars = config.getConfigurableBoolean("global-hotbars", false);
     }
 
     private void registerListeners() {
@@ -105,7 +72,7 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(MousePressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if (GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                if (playerState != null && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
                     if (buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
@@ -119,10 +86,6 @@ public class BetterBuilding extends StarMod {
                             buildHotbar.cyclePrevious();
                         } else {
                             return;
-                        }
-                        if (!autoSaveTimerStarted) {
-                            buildHotbar.startAutoSaveTimer(autoSaveInterval);
-                            autoSaveTimerStarted = true;
                         }
                         event.setCanceled(true);
                     }
@@ -139,7 +102,7 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(KeyPressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if (GameClientState.isCreated() && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
+                if (playerState != null && GameClient.getControlManager().isInAnyBuildMode() && playerState.isCreativeModeEnabled()) {
                     if (buildHotbar == null) {
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     }
@@ -190,10 +153,6 @@ public class BetterBuilding extends StarMod {
                                 exception.printStackTrace();
                             }
                         }
-                        if (!autoSaveTimerStarted) {
-                            buildHotbar.startAutoSaveTimer(autoSaveInterval);
-                            autoSaveTimerStarted = true;
-                        }
                         event.setCanceled(true);
                     }
                 } else {
@@ -204,48 +163,5 @@ public class BetterBuilding extends StarMod {
                 }
             }
         }, this);
-    }
-
-    private byte[] overwriteClass(String className, byte[] byteCode) {
-        byte[] bytes = null;
-        try {
-            ZipInputStream file = new ZipInputStream(new FileInputStream(this.getSkeleton().getJarFile()));
-            while (true) {
-                ZipEntry nextEntry = file.getNextEntry();
-                if (nextEntry == null) break;
-                if (nextEntry.getName().endsWith(className + ".class")) {
-                    bytes = IOUtils.toByteArray(file);
-                }
-            }
-            file.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (bytes != null) {
-            System.err.println("[BetterBuilding] Overwrote Class: " + className);
-            return bytes;
-        } else {
-            return byteCode;
-        }
-    }
-
-    public ArrayList<SymmetryPlane> getXYPlanes() {
-        return xyPlanes;
-    }
-
-    public ArrayList<SymmetryPlane> getXZPlanes() {
-        return xzPlanes;
-    }
-
-    public ArrayList<SymmetryPlane> getYZPlanes() {
-        return yzPlanes;
-    }
-
-    public ArrayList<SymmetryPlane> getAllPlanes() {
-        ArrayList<SymmetryPlane> symmetryPlanes = new ArrayList<>();
-        symmetryPlanes.addAll(xyPlanes);
-        symmetryPlanes.addAll(xzPlanes);
-        symmetryPlanes.addAll(yzPlanes);
-        return symmetryPlanes;
     }
 }

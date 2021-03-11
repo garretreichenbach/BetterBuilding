@@ -37,6 +37,7 @@ public class BuildHotbar extends BottomBarBuild {
     private Inventory inventory;
     private int activeHotbar;
     private HotbarData[][] hotbars;
+    private boolean autoSaveTimerStarted;
 
     //GUI
     public boolean hideHotbars;
@@ -51,7 +52,7 @@ public class BuildHotbar extends BottomBarBuild {
         super(inputState, inventoryPanel);
         inventory = inventoryPanel.getOwnPlayer().getInventory();
         activeHotbar = 0;
-        hotbars = HotbarUtils.loadHotbars();
+        autoSaveTimerStarted = false;
     }
 
     /**
@@ -142,6 +143,7 @@ public class BuildHotbar extends BottomBarBuild {
     }
 
     public void startAutoSaveTimer(int ticks) {
+        autoSaveTimerStarted = true;
         new StarRunnable() {
             @Override
             public void run() {
@@ -243,6 +245,11 @@ public class BuildHotbar extends BottomBarBuild {
 
         getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Number Key or Scroll] Change Hotbar", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
         getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Arrow Key] Move Hotbar by 1 pixel\n[+ LShift (Optional)] Move by 30 pixels", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
+
+        hotbars = HotbarUtils.loadHotbars();
+        updateHotbar();
+
+        if (!autoSaveTimerStarted) startAutoSaveTimer(BetterBuilding.getInstance().hotbarSaveInterval);
     }
 
     @Override
