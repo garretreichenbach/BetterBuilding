@@ -1,11 +1,10 @@
 package net.thederpgamer.betterbuilding.util;
 
 /**
- * GUIScale.java
- * GUI scaling utils
- * ==================================================
- * Created 01/22/2021
+ * GUI scaling utils.
+ *
  * @author TheDerpGamer
+ * @since 01/22/2021
  */
 public enum GUIScale {
 

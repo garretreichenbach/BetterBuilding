@@ -16,17 +16,23 @@ import javax.vecmath.Vector2f;
 import java.io.IOException;
 
 /**
- * BetterBuilding.java
- * Main class for BetterBuilding StarMade mod
- * ==================================================
- * Created 01/21/2021
+ * Main class for BetterBuilding StarMade mod.
+ *
  * @author TheDerpGamer
+ * @since 01/21/2021
  */
 public class BetterBuilding extends StarMod {
 
+    //Instance
     private static BetterBuilding instance;
+    public static BetterBuilding getInstance() {
+        return instance;
+    }
+    public BetterBuilding() {
 
+    }
     public static void main(String[] args) {
+
     }
 
     //Data
@@ -43,10 +49,6 @@ public class BetterBuilding extends StarMod {
     public Vector2f hotbarPos = new Vector2f(1038, 627);
     public int hotbarSaveInterval = 3500;
     public boolean globalHotbars = false;
-
-    public static BetterBuilding getInstance() {
-        return instance;
-    }
 
     @Override
     public void onEnable() {
