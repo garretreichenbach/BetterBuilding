@@ -1,6 +1,7 @@
 package net.thederpgamer.betterbuilding.gui;
 
 import api.common.GameClient;
+import api.common.GameCommon;
 import api.utils.StarRunnable;
 import net.thederpgamer.betterbuilding.BetterBuilding;
 import net.thederpgamer.betterbuilding.inventory.HotbarData;
@@ -84,7 +85,7 @@ public class BuildHotbar extends BottomBarBuild {
      */
     public void saveActive() {
         for(int i = 0; i < 10; i ++) {
-            hotbars[activeHotbar][i] = new HotbarData(inventory.getMap().get(i));
+            if(!inventory.getMap().get(i).isMetaItem()) hotbars[activeHotbar][i] = new HotbarData(inventory.getMap().get(i));
         }
     }
 
@@ -112,11 +113,8 @@ public class BuildHotbar extends BottomBarBuild {
      */
     public void cycleNext() {
         saveActive();
-        if(activeHotbar == 9) {
-            activeHotbar = 0;
-        } else {
-            activeHotbar ++;
-        }
+        if(activeHotbar == 9) activeHotbar = 0;
+        else activeHotbar ++;
         updateHotbar();
     }
 
@@ -125,11 +123,8 @@ public class BuildHotbar extends BottomBarBuild {
      */
     public void cyclePrevious() {
         saveActive();
-        if(activeHotbar == 0) {
-            activeHotbar = 9;
-        } else {
-            activeHotbar --;
-        }
+        if(activeHotbar == 0) activeHotbar = 9;
+        else activeHotbar --;
         updateHotbar();
     }
 

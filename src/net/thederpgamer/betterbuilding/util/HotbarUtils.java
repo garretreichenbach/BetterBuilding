@@ -62,19 +62,19 @@ public class HotbarUtils {
             try {
                 FileInputStream fileStream = new FileInputStream(hotbarsFile);
                 ObjectInputStream objectStream = new ObjectInputStream(fileStream);
-                for (int h = 0; h < 10; h++) {
-                    for (int i = 0; i < 10; i++) {
+                for(int h = 0; h < 10; h ++) {
+                    for(int i = 0; i < 10; i ++) {
                         hotbars[h][i] = (HotbarData) objectStream.readObject();
                     }
                 }
                 objectStream.close();
                 fileStream.close();
                 DebugFile.log("[INFO]: Successfully loaded hotbars", BetterBuilding.getInstance());
-            } catch (IOException | ClassNotFoundException ignored) { }
+            } catch(IOException | ClassNotFoundException ignored) { }
             return hotbars;
         } else {
             try {
-                return (HotbarData[][]) PersistentObjectUtil.getObjects(instance, HotbarData[][].class).get(0);
+                return(HotbarData[][]) PersistentObjectUtil.getObjects(instance, HotbarData[][].class).get(0);
             } catch (Exception ignored) {
                 return new HotbarData[10][10];
             }

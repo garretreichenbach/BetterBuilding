@@ -21,11 +21,10 @@ public class HotbarData implements Serializable {
     private HotbarData[] subSlots;
 
     public HotbarData(InventorySlot inventorySlot) {
-        if(inventorySlot != null && !inventorySlot.isEmpty()) {
+        if(inventorySlot != null && !inventorySlot.isEmpty() && !inventorySlot.isMetaItem()) {
             this.type = inventorySlot.getType();
             this.count = inventorySlot.count();
             this.infinite = inventorySlot.isInfinite();
-            this.metaId = inventorySlot.metaId;
             this.multislot = inventorySlot.multiSlot;
             if(inventorySlot.getSubSlots() != null && inventorySlot.getSubSlots().size() > 0) {
                 this.subSlots = new HotbarData[inventorySlot.getSubSlots().size()];
@@ -45,12 +44,9 @@ public class HotbarData implements Serializable {
             inventorySlot.setType(type);
             inventorySlot.setCount(count);
             inventorySlot.setInfinite(infinite);
-            inventorySlot.metaId = metaId;
             inventorySlot.multiSlot = multislot;
-            if (subSlots != null) {
-                for (HotbarData subSlotData : subSlots) {
-                    inventorySlot.getSubSlots().add(subSlotData.toInventorySlot());
-                }
+            if(subSlots != null) {
+                for(HotbarData subSlotData : subSlots) inventorySlot.getSubSlots().add(subSlotData.toInventorySlot());
             }
         } else {
             inventorySlot.setType(Element.TYPE_NONE);
@@ -68,10 +64,6 @@ public class HotbarData implements Serializable {
 
     public boolean isInfinite() {
         return infinite;
-    }
-
-    public int getMetaId() {
-        return metaId;
     }
 
     public String getMultislot() {
