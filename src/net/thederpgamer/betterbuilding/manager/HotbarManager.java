@@ -1,20 +1,20 @@
-package net.thederpgamer.betterbuilding.util;
+package net.thederpgamer.betterbuilding.manager;
 
 import api.DebugFile;
 import api.mod.ModSkeleton;
 import api.mod.config.PersistentObjectUtil;
 import net.thederpgamer.betterbuilding.BetterBuilding;
-import net.thederpgamer.betterbuilding.inventory.HotbarData;
+import net.thederpgamer.betterbuilding.data.HotbarData;
+
 import java.io.*;
 
 /**
- * HotbarUtils.java
- * Utilities for saving and loading hotbar layouts
- * ==================================================
- * Created 01/27/2021
+ * Manages saving and loading of hotbar layouts.
+ *
+ * @version 1.0 - [01/27/2021]
  * @author TheDerpGamer
  */
-public class HotbarUtils {
+public class HotbarManager {
 
     private static final boolean globalHotbars = BetterBuilding.getInstance().globalHotbars;
     private static final ModSkeleton instance = BetterBuilding.getInstance().getSkeleton();

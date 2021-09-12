@@ -8,7 +8,7 @@ import api.mod.StarLoader;
 import api.mod.StarMod;
 import api.mod.config.FileConfiguration;
 import net.thederpgamer.betterbuilding.gui.BuildHotbar;
-import net.thederpgamer.betterbuilding.util.HotbarUtils;
+import net.thederpgamer.betterbuilding.manager.HotbarManager;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.common.data.player.inventory.VirtualCreativeModeInventory;
 import org.schema.schine.input.Keyboard;
@@ -20,39 +20,33 @@ import java.io.IOException;
 /**
  * Main class for BetterBuilding StarMade mod.
  *
+ * @version 1.0 - [01/21/2021]
  * @author TheDerpGamer
- * @since 01/21/2021
  */
 public class BetterBuilding extends StarMod {
 
     //Instance
     private static BetterBuilding instance;
+    public BetterBuilding() { }
+    public static BetterBuilding getInstance() { return instance; }
+    public static void main(String[] args) { }
+
     //Data
     public BuildHotbar buildHotbar;
+
+    //Config
+    private final String[] defaultConfig = {"debug-mode: false", "hotbar-pos: 1038, 627", "hotbar-save-interval: 3500", "global-hotbars: false"};
     public boolean debugMode = false;
     public Vector2f hotbarPos = new Vector2f(1038, 627);
     public int hotbarSaveInterval = 3500;
     public boolean globalHotbars = false;
-    //Config
-    private String[] defaultConfig = {"debug-mode: false", "hotbar-pos: 1038, 627", "hotbar-save-interval: 3500", "global-hotbars: false"};
-    public BetterBuilding() {
-
-    }
-
-    public static BetterBuilding getInstance() {
-        return instance;
-    }
-
-    public static void main(String[] args) {
-
-    }
 
     @Override
     public void onEnable() {
         instance = this;
         loadConfig();
         registerListeners();
-        HotbarUtils.initialize();
+        HotbarManager.initialize();
     }
 
     private void loadConfig() {
@@ -96,7 +90,7 @@ public class BetterBuilding extends StarMod {
             @Override
             public void onEvent(KeyPressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
-                if(playerState != null && GameClient.getControlManager().isInAnyBuildMode() && (playerState.isCreativeModeEnabled() || playerState.getInventory() instanceof VirtualCreativeModeInventory)) {
+                if(playerState != null && !GameClient.getControlManager().getState().isInFlightMode() && (playerState.isUseCreativeMode() || playerState.getInventory() instanceof VirtualCreativeModeInventory) || playerState.getInventory().isInfinite()) {
                     if(buildHotbar == null)
                         (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     buildHotbar.hideHotbars = false;

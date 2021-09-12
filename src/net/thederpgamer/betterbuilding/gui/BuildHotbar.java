@@ -1,12 +1,10 @@
 package net.thederpgamer.betterbuilding.gui;
 
 import api.common.GameClient;
-import api.common.GameCommon;
 import api.utils.StarRunnable;
 import net.thederpgamer.betterbuilding.BetterBuilding;
-import net.thederpgamer.betterbuilding.inventory.HotbarData;
-import net.thederpgamer.betterbuilding.util.GUIScale;
-import net.thederpgamer.betterbuilding.util.HotbarUtils;
+import net.thederpgamer.betterbuilding.data.HotbarData;
+import net.thederpgamer.betterbuilding.manager.HotbarManager;
 import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
 import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
 import org.schema.game.client.view.gui.shiphud.newhud.HudContextHelpManager;
@@ -26,10 +24,9 @@ import javax.vecmath.Vector2f;
 import java.io.IOException;
 
 /**
- * BuildHotbar.java
- * Build Hotbar GUI
- * ==================================================
- * Created 01/22/2021
+ * Build hotbar GUI element.
+ *
+ * @version 1.0 - [01/22/2021]
  * @author TheDerpGamer
  */
 public class BuildHotbar extends BottomBarBuild {
@@ -101,7 +98,7 @@ public class BuildHotbar extends BottomBarBuild {
      */
     public void updateHotbar() {
         for(int i = 0; i < 10; i ++) {
-            InventorySlot newSlot = (getActive()[i] != null) ? getActive()[i].toInventorySlot() : new InventorySlot();
+            InventorySlot newSlot = (getActive()[i] != null) ? getActive()[i].convertToSlot() : new InventorySlot();
             inventory.getMap().remove(i);
             inventory.getMap().put(i, newSlot);
         }
@@ -142,7 +139,7 @@ public class BuildHotbar extends BottomBarBuild {
         new StarRunnable() {
             @Override
             public void run() {
-                HotbarUtils.saveHotbars(hotbars);
+                HotbarManager.saveHotbars(hotbars);
             }
         }.runTimer(BetterBuilding.getInstance(), ticks);
     }
@@ -241,7 +238,7 @@ public class BuildHotbar extends BottomBarBuild {
         getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Number Key or Scroll] Change Hotbar", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
         getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Arrow Key] Move Hotbar by 1 pixel\n[+ LShift (Optional)] Move by 30 pixels", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
 
-        hotbars = HotbarUtils.loadHotbars();
+        hotbars = HotbarManager.loadHotbars();
         updateHotbar();
 
         if (!autoSaveTimerStarted) startAutoSaveTimer(BetterBuilding.getInstance().hotbarSaveInterval);
