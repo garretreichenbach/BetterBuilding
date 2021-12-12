@@ -8,18 +8,17 @@ import net.thederpgamer.betterbuilding.manager.HotbarManager;
 import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
 import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
 import org.schema.game.client.view.gui.shiphud.newhud.HudContextHelpManager;
-import org.schema.game.client.view.gui.shiphud.newhud.HudContextHelperContainer;
+import org.schema.game.common.data.element.ElementKeyMap;
 import org.schema.game.common.data.player.inventory.Inventory;
 import org.schema.game.common.data.player.inventory.InventorySlot;
 import org.schema.schine.graphicsengine.core.Controller;
 import org.schema.schine.graphicsengine.core.MouseEvent;
-import org.schema.schine.graphicsengine.core.settings.ContextFilter;
 import org.schema.schine.graphicsengine.forms.font.FontLibrary;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.GUIInnerBackground;
 import org.schema.schine.input.InputState;
 import org.schema.schine.input.Keyboard;
-import org.schema.schine.input.KeyboardMappings;
+
 import javax.vecmath.Vector2f;
 import java.io.IOException;
 
@@ -32,7 +31,6 @@ import java.io.IOException;
 public class BuildHotbar extends BottomBarBuild {
 
     //Data
-    private Inventory inventory;
     private int activeHotbar;
     private HotbarData[][] hotbars;
     private boolean autoSaveTimerStarted;
@@ -48,18 +46,19 @@ public class BuildHotbar extends BottomBarBuild {
 
     public BuildHotbar(InputState inputState, InventoryPanelNew inventoryPanel) {
         super(inputState, inventoryPanel);
-        inventory = inventoryPanel.getOwnPlayer().getInventory();
         activeHotbar = 0;
         autoSaveTimerStarted = false;
+    }
+
+    public Inventory getInventory() {
+        return GameClient.getClientPlayerState().getInventory();
     }
 
     /**
      * @return True if any number key is currently being pressed
      */
     public boolean anyNumberKeyDown() {
-        for(int i = 2; i < 12; i ++) {
-            if(Keyboard.isKeyDown(i)) return true;
-        }
+        for(int i = 2; i < 12; i ++) if(Keyboard.isKeyDown(i)) return true;
         return false;
     }
 
@@ -70,19 +69,20 @@ public class BuildHotbar extends BottomBarBuild {
      * @return The hotbar number
      */
     public int getHotbarNumber(int key) {
-        if(anyNumberKeyDown()) {
-            return key - 2;
-        } else {
-            return activeHotbar;
-        }
+        if(anyNumberKeyDown()) return key - 2;
+        else return activeHotbar;
     }
 
     /**
      * Saves the active hotbar to slot
      */
     public void saveActive() {
-        for(int i = 0; i < 10; i ++) {
-            if(!inventory.getMap().get(i).isMetaItem()) hotbars[activeHotbar][i] = new HotbarData(inventory.getMap().get(i));
+        Inventory inventory = getInventory();
+        if(inventory != null && inventory.getMap() != null && inventory.isInfinite()) {
+            for(int i = 0; i < 10; i ++) {
+                InventorySlot slot = inventory.getMap().get(i);
+                if(slot != null && !slot.isMetaItem()) hotbars[activeHotbar][i] = new HotbarData(slot);
+            }
         }
     }
 
@@ -97,12 +97,16 @@ public class BuildHotbar extends BottomBarBuild {
      * Updates the active hotbar
      */
     public void updateHotbar() {
-        for(int i = 0; i < 10; i ++) {
-            InventorySlot newSlot = (getActive()[i] != null) ? getActive()[i].convertToSlot() : new InventorySlot();
-            inventory.getMap().remove(i);
-            inventory.getMap().put(i, newSlot);
-        }
-        barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
+        if(getInventory().isInfinite()) {
+            for(int i = 0; i < 10; i ++) {
+                getInventory().getMap().remove(i);
+                if(ElementKeyMap.isValidType(getActive()[i].type) || getActive()[i].type < 0) { //Only add valid ids or multi slots
+                    InventorySlot newSlot = (getActive()[i] != null) ? getActive()[i].convertToSlot() : new InventorySlot();
+                    getInventory().getMap().put(i, newSlot);
+                }
+            }
+            barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
+        } else hideHotbars = true;
     }
 
     /**
@@ -168,6 +172,7 @@ public class BuildHotbar extends BottomBarBuild {
     @Override
     public void onInit() {
         super.onInit();
+
         barIndexText = new GUITextOverlay(10, 10, FontLibrary.FontSize.BIG, getState());
         barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
         barIndexText.setPos(GUIScale.S.defaultInset, GUIScale.S.scale(28), 0);
@@ -235,13 +240,13 @@ public class BuildHotbar extends BottomBarBuild {
         posText.onInit();
         posText.setVisibility(2);
 
-        getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Number Key or Scroll] Change Hotbar", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
-        getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Arrow Key] Move Hotbar by 1 pixel\n[+ LShift (Optional)] Move by 30 pixels", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
+        //getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Number Key or Scroll] Change Hotbar", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
+        //getHudHelpManager().addHelper(KeyboardMappings.SWITCH_FIRE_MODE, "[+ Arrow Key] Move Hotbar by 1 pixel\n[+ LShift (Optional)] Move by 30 pixels", HudContextHelperContainer.Hos.LEFT, ContextFilter.IMPORTANT);
 
         hotbars = HotbarManager.loadHotbars();
         updateHotbar();
 
-        if (!autoSaveTimerStarted) startAutoSaveTimer(BetterBuilding.getInstance().hotbarSaveInterval);
+        if(!autoSaveTimerStarted) startAutoSaveTimer(BetterBuilding.getInstance().hotbarSaveInterval);
     }
 
     @Override
@@ -249,11 +254,8 @@ public class BuildHotbar extends BottomBarBuild {
         super.draw();
         if(!hideHotbars) {
             bgIndexAnchor.draw();
-            if(!posText.isInvisible()) {
-                posText.draw();
-            } else {
-                posText.cleanUp();
-            }
+            if(!posText.isInvisible()) posText.draw();
+            else posText.cleanUp();
         } else {
             bgIndexAnchor.cleanUp();
             bgIndex.cleanUp();

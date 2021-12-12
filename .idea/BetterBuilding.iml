@@ -11,23 +11,23 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://$MODULE_DIR$/../../Game Files/StarMade Modded/StarMade/lib" />
+          <root url="jar://C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/StarMade.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="file://$MODULE_DIR$/../../Game Files/StarMade Modded/StarMade/lib" />
-        </SOURCES>
-        <jarDirectory url="file://$MODULE_DIR$/../../Game Files/StarMade Modded/StarMade/lib" recursive="false" />
-        <jarDirectory url="file://$MODULE_DIR$/../../Game Files/StarMade Modded/StarMade/lib" recursive="false" type="SOURCES" />
+        <SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../../Game Files/StarMade Modded/StarMade/StarMade.jar!/" />
+          <root url="file://C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/lib" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="file://C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/lib" />
+        </SOURCES>
+        <jarDirectory url="file://C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/lib" recursive="false" />
+        <jarDirectory url="file://C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/lib" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
   </component>

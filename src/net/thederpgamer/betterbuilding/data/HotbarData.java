@@ -18,7 +18,7 @@ public class HotbarData {
     public HotbarData[] subSlots;
 
     public HotbarData(InventorySlot inventorySlot) {
-        if(inventorySlot != null && !inventorySlot.isEmpty() && !inventorySlot.isMetaItem()) {
+        if(inventorySlot != null && !inventorySlot.isMetaItem()) {
             this.type = inventorySlot.getType();
             this.count = inventorySlot.count();
             this.infinite = inventorySlot.isInfinite();
@@ -48,12 +48,13 @@ public class HotbarData {
      */
     public static InventorySlot toInventorySlot(HotbarData hotbarData) {
         InventorySlot inventorySlot = new InventorySlot();
-        if(hotbarData.type != Element.TYPE_NONE) {
-            inventorySlot.setType(hotbarData.type);
-            inventorySlot.setCount(hotbarData.count);
-            inventorySlot.setInfinite(hotbarData.infinite);
-            if(hotbarData.subSlots != null) for(HotbarData subSlotData : hotbarData.subSlots) inventorySlot.getSubSlots().add(subSlotData.convertToSlot());
-        } else inventorySlot.setType(Element.TYPE_NONE);
+        inventorySlot.setType(hotbarData.type);
+        inventorySlot.setCount(hotbarData.count);
+        inventorySlot.setInfinite(hotbarData.infinite);
+        inventorySlot.multiSlot = hotbarData.multiSlot;
+        if(hotbarData.subSlots != null && hotbarData.subSlots.length > 0) {
+            for(HotbarData subSlotData : hotbarData.subSlots) inventorySlot.getSubSlots().add(subSlotData.convertToSlot());
+        }
         return inventorySlot;
     }
 

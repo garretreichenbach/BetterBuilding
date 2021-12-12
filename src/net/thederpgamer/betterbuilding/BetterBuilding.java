@@ -33,6 +33,9 @@ public class BetterBuilding extends StarMod {
 
     //Data
     public BuildHotbar buildHotbar;
+    public boolean[] replacedFields = new boolean[] {
+            false //Advanced Build Mode Selection
+    };
 
     //Config
     private final String[] defaultConfig = {"debug-mode: false", "hotbar-pos: 1038, 627", "hotbar-save-interval: 3500", "global-hotbars: false"};
@@ -61,13 +64,30 @@ public class BetterBuilding extends StarMod {
     }
 
     private void registerListeners() {
+        /*
+        StarLoader.registerListener(AdvancedBuildModeGUICreateEvent.class, new Listener<AdvancedBuildModeGUICreateEvent>() {
+            @Override
+            public void onEvent(AdvancedBuildModeGUICreateEvent event) {
+                if(!replacedFields[0]) {
+                    try {
+                        for(AdvancedGUIGroup guiGroup : event.getGroups()) {
+                            if(guiGroup instanceof AdvancedBuildModeSelection) {
+                                AdvancedBuildModeSelection selection = (AdvancedBuildModeSelection) guiGroup;
+                                selection.addCheckbox(selection.getClass().getDeclaredField(""))
+                            }
+                        }
+                    }
+                }
+            }
+        }, this);
+         */
+
         StarLoader.registerListener(MousePressEvent.class, new Listener<MousePressEvent>() {
             @Override
             public void onEvent(MousePressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
                 if(playerState != null && GameClient.getControlManager().isInAnyBuildMode() && (playerState.isCreativeModeEnabled() || playerState.getInventory() instanceof VirtualCreativeModeInventory)) {
-                    if(buildHotbar == null)
-                        (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
+                    if(buildHotbar == null) (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     buildHotbar.hideHotbars = false;
                     GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(buildHotbar);
 
@@ -91,8 +111,7 @@ public class BetterBuilding extends StarMod {
             public void onEvent(KeyPressEvent event) {
                 PlayerState playerState = GameClient.getClientPlayerState();
                 if(playerState != null && !GameClient.getControlManager().getState().isInFlightMode() && (playerState.isUseCreativeMode() || playerState.getInventory() instanceof VirtualCreativeModeInventory) || playerState.getInventory().isInfinite()) {
-                    if(buildHotbar == null)
-                        (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
+                    if(buildHotbar == null) (buildHotbar = new BuildHotbar(GameClient.getClientState(), GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().getInventoryPanel())).onInit();
                     buildHotbar.hideHotbars = false;
                     GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(buildHotbar);
 
