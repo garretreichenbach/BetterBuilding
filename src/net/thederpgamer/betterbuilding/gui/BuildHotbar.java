@@ -100,10 +100,12 @@ public class BuildHotbar extends BottomBarBuild {
         if(getInventory().isInfinite()) {
             for(int i = 0; i < 10; i ++) {
                 getInventory().getMap().remove(i);
-                if(ElementKeyMap.isValidType(getActive()[i].type) || getActive()[i].type < 0) { //Only add valid ids or multi slots
-                    InventorySlot newSlot = (getActive()[i] != null) ? getActive()[i].convertToSlot() : new InventorySlot();
-                    getInventory().getMap().put(i, newSlot);
-                }
+                try {
+                    if(ElementKeyMap.isValidType(getActive()[i].type) || getActive()[i].type < 0) { //Only add valid ids or multi slots
+                        InventorySlot newSlot = (getActive()[i] != null) ? getActive()[i].convertToSlot() : new InventorySlot();
+                        getInventory().getMap().put(i, newSlot);
+                    }
+                } catch(NullPointerException ignored) { }
             }
             barIndexText.setTextSimple(String.valueOf((activeHotbar + 1)));
         } else hideHotbars = true;
