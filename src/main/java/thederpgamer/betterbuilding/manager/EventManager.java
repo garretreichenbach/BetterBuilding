@@ -2,18 +2,25 @@ package thederpgamer.betterbuilding.manager;
 
 import api.common.GameClient;
 import api.listener.Listener;
+import api.listener.events.gui.AdvancedBuildModeGUICreateEvent;
 import api.listener.events.input.KeyPressEvent;
 import api.listener.events.input.MousePressEvent;
 import api.mod.StarLoader;
+import com.bulletphysics.util.ObjectArrayList;
 import org.lwjgl.input.Keyboard;
+import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
+import org.schema.game.client.view.buildhelper.BuildHelper;
+import org.schema.game.client.view.gui.advanced.AdvancedGUIGroup;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.common.data.player.inventory.VirtualCreativeModeInventory;
 import org.schema.schine.input.KeyboardMappings;
 import thederpgamer.betterbuilding.BetterBuilding;
 import thederpgamer.betterbuilding.gui.BuildHotbar;
+import thederpgamer.betterbuilding.gui.advancedbuildmode.BBAdvancedBuildModeShape;
 
 import javax.vecmath.Vector2f;
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 /**
  * [Description]
@@ -23,6 +30,41 @@ import java.io.IOException;
 public class EventManager {
 
 	public static void registerEvents(BetterBuilding betterBuilding) {
+		StarLoader.registerListener(AdvancedBuildModeGUICreateEvent.class, new Listener<AdvancedBuildModeGUICreateEvent>() {
+			@Override
+			public void onEvent(AdvancedBuildModeGUICreateEvent event) {
+				boolean replaced = false;
+				int index = -1;
+				for(AdvancedGUIGroup guiGroup : event.getGroups()) {
+					if(guiGroup instanceof BBAdvancedBuildModeShape) {
+						replaced = true;
+						break;
+					}
+					index ++;
+				}
+				if(!replaced) {
+					event.getGroups().remove(index);
+					event.getGroups().add(index, new BBAdvancedBuildModeShape(GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().advancedBuildMode));
+				}
+
+				try {
+					Field field = getBuildToolsManager().getClass().getDeclaredField("buildHelperClasses");
+					field.setAccessible(true);
+					ObjectArrayList<Class<? extends BuildHelper>> buildHelpers = (ObjectArrayList<Class<? extends BuildHelper>>) field.get(getBuildToolsManager());
+					for(int i = 0; i < getBuildToolsManager().getBuildHelperClasses().size(); i ++) {
+						if(buildHelpers.get(i).getName().contains("BuildHelperLine")) {
+							if(!buildHelpers.get(i).getName().contains("BBBuildHelperLine")) buildHelpers.set(i, (Class<? extends BuildHelper>) Class.forName("thederpgamer.betterbuilding.gui.advancedbuildmode.helpers.BBBuildHelperLine"));
+						}
+					}
+					field.set(getBuildToolsManager(), buildHelpers);
+				} catch(NoSuchFieldException | IllegalAccessException exception) {
+					exception.printStackTrace();
+				} catch(ClassNotFoundException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}, betterBuilding);
+
 		StarLoader.registerListener(MousePressEvent.class, new Listener<MousePressEvent>() {
 			@Override
 			public void onEvent(MousePressEvent event) {
@@ -110,5 +152,9 @@ public class EventManager {
 				}
 			}
 		}, betterBuilding);
+	}
+
+	private static BuildToolsManager getBuildToolsManager() {
+		return GameClient.getClientState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager();
 	}
 }
