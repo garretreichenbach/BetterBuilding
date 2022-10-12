@@ -1,4 +1,4 @@
-package net.thederpgamer.betterbuilding.gui;
+package thederpgamer.betterbuilding.gui;
 
 /**
  * GUI scaling utils.

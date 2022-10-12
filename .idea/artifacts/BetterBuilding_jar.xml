@@ -4,8 +4,8 @@
     <root id="root">
       <element id="archive" name="BetterBuilding.jar">
         <element id="module-output" name="BetterBuilding" />
-        <element id="file-copy" path="$PROJECT_DIR$/src/mod.json" />
-        <element id="file-copy" path="$PROJECT_DIR$/src/modicon.png" />
+        <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/mod.json" />
+        <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/modicon.png" />
       </element>
     </root>
   </artifact>

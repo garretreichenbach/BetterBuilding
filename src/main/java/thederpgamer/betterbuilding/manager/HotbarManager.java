@@ -1,10 +1,9 @@
-package net.thederpgamer.betterbuilding.manager;
+package thederpgamer.betterbuilding.manager;
 
-import api.DebugFile;
 import api.mod.ModSkeleton;
 import api.mod.config.PersistentObjectUtil;
-import net.thederpgamer.betterbuilding.BetterBuilding;
-import net.thederpgamer.betterbuilding.data.HotbarData;
+import thederpgamer.betterbuilding.BetterBuilding;
+import thederpgamer.betterbuilding.data.HotbarData;
 
 import java.io.*;
 
@@ -45,7 +44,7 @@ public class HotbarManager {
                 }
                 objectStream.close();
                 fileStream.close();
-                DebugFile.log("[INFO]: Successfully saved hotbars", BetterBuilding.getInstance());
+                BetterBuilding.log.info("Successfully saved hotbars");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -69,7 +68,7 @@ public class HotbarManager {
                 }
                 objectStream.close();
                 fileStream.close();
-                DebugFile.log("[INFO]: Successfully loaded hotbars", BetterBuilding.getInstance());
+                BetterBuilding.log.info("Successfully loaded hotbars");
             } catch(IOException | ClassNotFoundException ignored) { }
             return hotbars;
         } else {

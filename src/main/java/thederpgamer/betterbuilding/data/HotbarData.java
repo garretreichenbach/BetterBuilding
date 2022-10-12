@@ -1,4 +1,4 @@
-package net.thederpgamer.betterbuilding.data;
+package thederpgamer.betterbuilding.data;
 
 import org.schema.game.common.data.element.Element;
 import org.schema.game.common.data.player.inventory.InventorySlot;

@@ -2,11 +2,11 @@
   "name": "BetterBuilding",
   "author": "TheDerpGamer",
   "description": "A small mod with helpful building tools and utilities",
-  "version": "1.3.12",
-  "starmade_version": "0.203.113",
+  "version": "1.4.0",
+  "starmade_version": "0.203.125",
   "client_mod": true,
   "server_mod": false,
-  "main_class": "net.thederpgamer.betterbuilding.BetterBuilding",
+  "main_class": "thederpgamer.betterbuilding.BetterBuilding",
   "smd_resource_id": 8219,
   "dependencies": [
     -1

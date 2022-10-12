@@ -1,10 +1,10 @@
-package net.thederpgamer.betterbuilding.gui;
+package thederpgamer.betterbuilding.gui;
 
 import api.common.GameClient;
 import api.utils.StarRunnable;
-import net.thederpgamer.betterbuilding.BetterBuilding;
-import net.thederpgamer.betterbuilding.data.HotbarData;
-import net.thederpgamer.betterbuilding.manager.HotbarManager;
+import thederpgamer.betterbuilding.BetterBuilding;
+import thederpgamer.betterbuilding.data.HotbarData;
+import thederpgamer.betterbuilding.manager.HotbarManager;
 import org.schema.game.client.view.gui.inventory.inventorynew.InventoryPanelNew;
 import org.schema.game.client.view.gui.shiphud.newhud.BottomBarBuild;
 import org.schema.game.client.view.gui.shiphud.newhud.HudContextHelpManager;
