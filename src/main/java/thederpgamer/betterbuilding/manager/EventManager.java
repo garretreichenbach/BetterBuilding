@@ -8,17 +8,22 @@ import api.listener.events.input.MousePressEvent;
 import api.mod.StarLoader;
 import com.bulletphysics.util.ObjectArrayList;
 import org.lwjgl.input.Keyboard;
+import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
 import org.schema.game.client.view.buildhelper.BuildHelper;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIGroup;
+import org.schema.game.common.data.VoidSegmentPiece;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.common.data.player.inventory.VirtualCreativeModeInventory;
+import org.schema.schine.graphicsengine.camera.Camera;
+import org.schema.schine.graphicsengine.core.Controller;
 import org.schema.schine.input.KeyboardMappings;
 import thederpgamer.betterbuilding.BetterBuilding;
 import thederpgamer.betterbuilding.gui.BuildHotbar;
 import thederpgamer.betterbuilding.gui.advancedbuildmode.BBAdvancedBuildModeShape;
 
 import javax.vecmath.Vector2f;
+import javax.vecmath.Vector3f;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
@@ -40,7 +45,7 @@ public class EventManager {
 						replaced = true;
 						break;
 					}
-					index ++;
+					index++;
 				}
 				if(!replaced) {
 					event.getGroups().remove(index);
@@ -51,7 +56,7 @@ public class EventManager {
 					Field field = getBuildToolsManager().getClass().getDeclaredField("buildHelperClasses");
 					field.setAccessible(true);
 					ObjectArrayList<Class<? extends BuildHelper>> buildHelpers = (ObjectArrayList<Class<? extends BuildHelper>>) field.get(getBuildToolsManager());
-					for(int i = 0; i < getBuildToolsManager().getBuildHelperClasses().size(); i ++) {
+					for(int i = 0; i < getBuildToolsManager().getBuildHelperClasses().size(); i++) {
 						if(buildHelpers.get(i).getName().contains("BuildHelperLine")) {
 							if(!buildHelpers.get(i).getName().contains("BBBuildHelperLine")) buildHelpers.set(i, (Class<? extends BuildHelper>) Class.forName("thederpgamer.betterbuilding.gui.advancedbuildmode.helpers.BBBuildHelperLine"));
 						}
@@ -74,7 +79,40 @@ public class EventManager {
 					BetterBuilding.getInstance().buildHotbar.hideHotbars = false;
 					GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().setBuildSideBar(BetterBuilding.getInstance().buildHotbar);
 
-					if(Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping()) && event.getScrollDirection() != 0 && !BetterBuilding.getInstance().buildHotbar.anyNumberKeyDown()) {
+					if(event.getScrollDirection() != 0 && GameClient.getControlManager().getBuildToolsManager().isPasteMode()) {
+						Camera camera = Controller.getCamera();
+						Vector3f cameraDir = camera.getForward();
+						try {
+							Field minField = getBuildToolsManager().getCopyArea().getClass().getDeclaredField("min");
+							Field maxField = getBuildToolsManager().getCopyArea().getClass().getDeclaredField("max");
+							Field piecesField = getBuildToolsManager().getCopyArea().getClass().getDeclaredField("pieces");
+
+							minField.setAccessible(true);
+							maxField.setAccessible(true);
+							piecesField.setAccessible(true);
+
+							Vector3i min = (Vector3i) minField.get(getBuildToolsManager().getCopyArea());
+							Vector3i max = (Vector3i) maxField.get(getBuildToolsManager().getCopyArea());
+							ObjectArrayList<VoidSegmentPiece> pieces = (ObjectArrayList<VoidSegmentPiece>) piecesField.get(getBuildToolsManager().getCopyArea());
+
+							Vector3f dir = new Vector3f(cameraDir);
+							dir.normalize();
+							dir.scale(event.getScrollDirection());
+							Vector3i axis = new Vector3i();
+							if(Math.abs(dir.x) > Math.abs(dir.y) && Math.abs(dir.x) > Math.abs(dir.z)) axis.x = (int) Math.signum(dir.x);
+							else if(Math.abs(dir.y) > Math.abs(dir.x) && Math.abs(dir.y) > Math.abs(dir.z)) axis.y = (int) Math.signum(dir.y);
+							else axis.z = (int) Math.signum(dir.z);
+							min.add(axis.x, axis.y, axis.z);
+							max.add(axis.x, axis.y, axis.z);
+
+							minField.set(getBuildToolsManager().getCopyArea(), min);
+							maxField.set(getBuildToolsManager().getCopyArea(), max);
+							for(VoidSegmentPiece piece : pieces) piece.voidPos.add(axis.x, axis.y, axis.z);
+							piecesField.set(getBuildToolsManager().getCopyArea(), pieces);
+						} catch(Exception exception) {
+							exception.printStackTrace();
+						}
+					} else if(Keyboard.isKeyDown(KeyboardMappings.SWITCH_FIRE_MODE.getMapping()) && event.getScrollDirection() != 0 && !BetterBuilding.getInstance().buildHotbar.anyNumberKeyDown()) {
 						if(event.getScrollDirection() > 0) BetterBuilding.getInstance().buildHotbar.cycleNext();
 						else if(event.getScrollDirection() < 0) BetterBuilding.getInstance().buildHotbar.cyclePrevious();
 						else return;

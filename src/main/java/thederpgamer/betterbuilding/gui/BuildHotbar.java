@@ -21,6 +21,7 @@ import org.schema.schine.input.Keyboard;
 
 import javax.vecmath.Vector2f;
 import java.io.IOException;
+import java.security.Key;
 
 /**
  * Build hotbar GUI element.
@@ -58,7 +59,7 @@ public class BuildHotbar extends BottomBarBuild {
      * @return True if any number key is currently being pressed
      */
     public boolean anyNumberKeyDown() {
-        for(int i = 2; i < 12; i ++) if(Keyboard.isKeyDown(i)) return true;
+        for(int i = 2; i < 12; i ++) if(Keyboard.isKeyDown(i) && !Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_GRAVE)) return true;
         return false;
     }
 

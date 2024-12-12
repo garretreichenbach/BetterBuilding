@@ -12,7 +12,7 @@ mainClassName = 'thederpgamer.betterbuilding.BetterBuilding'
 group 'thederpgamer.betterbuilding'
 version '1.4.0'
 
-def starmadeDirectory = 'C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/'
+def starmadeDirectory = 'G:/SteamLibrary/steamapps/common/StarMade/StarMade/mods/'
 def jarName = 'BetterBuildingv' + version
 
 repositories {
