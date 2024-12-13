@@ -10,7 +10,7 @@ targetCompatibility = 1.7
 
 mainClassName = 'thederpgamer.betterbuilding.BetterBuilding'
 group 'thederpgamer.betterbuilding'
-version '1.4.0'
+version '1.4.1'
 
 def starmadeDirectory = 'G:/SteamLibrary/steamapps/common/StarMade/StarMade/'
 def jarName = 'BetterBuildingv' + version
