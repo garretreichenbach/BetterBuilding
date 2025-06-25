@@ -1,4 +1,4 @@
-package thederpgamer.betterbuilding.ai;
+package thederpgamer.betterbuilding.data.ai;
 
 /**
  * [Description]

@@ -1,4 +1,4 @@
-package thederpgamer.betterbuilding.ai;
+package thederpgamer.betterbuilding.data.ai;
 
 import py4j.GatewayServer;
 import thederpgamer.betterbuilding.BetterBuilding;
