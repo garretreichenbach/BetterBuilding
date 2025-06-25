@@ -12,7 +12,7 @@ mainClassName = 'thederpgamer.betterbuilding.BetterBuilding'
 group 'thederpgamer.betterbuilding'
 version '1.4.1'
 
-def starmadeDirectory = 'G:/SteamLibrary/steamapps/common/StarMade/StarMade/'
+def starmadeDirectory = 'C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/'
 def jarName = 'BetterBuildingv' + version
 
 repositories {
@@ -23,6 +23,7 @@ dependencies {
     implementation(files(starmadeDirectory + "StarMade.jar"))
     implementation(fileTree(dir: (starmadeDirectory + "lib"), include: "*.jar"))
     implementation(fileTree(dir: ("lib"), include: "*.jar"))
+    implementation("net.sf.py4j:py4j:0.10.9.3")
 }
 
 compileJava.options.encoding = 'UTF-8'
