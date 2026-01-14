@@ -1,43 +1,57 @@
 plugins {
     id 'java'
-    id'application'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
 }
 
-apply plugin: 'java'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-
-mainClassName = 'thederpgamer.betterbuilding.BetterBuilding'
-group 'thederpgamer.betterbuilding'
-version '1.4.1'
-
-def starmadeDirectory = 'C:/Program Files (x86)/Steam/steamapps/common/StarMade/StarMade/'
-def jarName = 'BetterBuildingv' + version
+def starmadeDirectory = project.property("starmade_root")
+def modName = project.property("mod_name")
+group = project.property('mod_org_id')
+version = project.property('mod_version')
+mainClassName = group + modName
 
 repositories {
     mavenCentral()
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     implementation(files(starmadeDirectory + "StarMade.jar"))
     implementation(fileTree(dir: (starmadeDirectory + "lib"), include: "*.jar"))
     implementation(fileTree(dir: ("lib"), include: "*.jar"))
-    implementation("net.sf.py4j:py4j:0.10.9.3")
 }
 
 compileJava.options.encoding = 'UTF-8'
 
+tasks.register("updateVersion") {
+    doLast {
+        def modJson = file('src/main/resources/mod.json')
+        def modJsonContent = modJson.getText()
+        modJsonContent = modJsonContent.replaceAll(/"version":\s*".*"/, "\"version\": \"" + version + "\"")
+        modJson.write(modJsonContent)
+    }
+}
+
 jar {
+    dependsOn("updateVersion")
     duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     destinationDirectory.set(file(starmadeDirectory + "mods"))
-    archiveFileName = jarName + '.jar'
+    archiveFileName = modName + 'v' + getVersion() + '.jar'
     manifest.attributes('Main-Class': mainClassName)
     from {
         configurations.runtimeClasspath.collect {
-            if(!it.getPath().contains("StarMade") && it.getName().endsWith(".jar")) {
+            if (!it.getPath().contains("StarMade") && it.getName().endsWith(".jar")) {
                 it.isDirectory() ? it : zipTree(it)
-            } else return null;
+            } else {
+                return null
+            }
         }
     }
 }

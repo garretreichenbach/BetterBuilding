@@ -1,20 +1,15 @@
 package thederpgamer.betterbuilding;
 
+import api.mod.StarLoader;
 import api.mod.StarMod;
-import thederpgamer.betterbuilding.gui.BuildHotbar;
+import thederpgamer.betterbuilding.data.commands.GenerateTemplateCommand;
 import thederpgamer.betterbuilding.manager.ConfigManager;
-import thederpgamer.betterbuilding.manager.EventManager;
-import thederpgamer.betterbuilding.manager.HotbarManager;
 
 /**
  * Main class for BetterBuilding StarMade mod.
- *
- * @version 1.0 - [01/21/2021]
- * @author TheDerpGamer
  */
 public class BetterBuilding extends StarMod {
 
-	//Instance
 	private static BetterBuilding instance;
 
 	public BetterBuilding() {
@@ -27,15 +22,15 @@ public class BetterBuilding extends StarMod {
 	public static void main(String[] args) {
 	}
 
-	//Data
-	public BuildHotbar buildHotbar;
-
 	@Override
 	public void onEnable() {
 		instance = this;
 		ConfigManager.initialize(this);
-		EventManager.registerEvents(this);
-		HotbarManager.initialize();
+		registerCommands();
+	}
+
+	private void registerCommands() {
+		StarLoader.registerCommand(new GenerateTemplateCommand());
 	}
 
 	@Override
