@@ -77,14 +77,14 @@ public class TemplateGenerator {
 		// Deterministic RNG for selection
 		Random rng = new Random(options.seed);
 
-		TemplateMetaData out = new TemplateMetaData("generated", outputDims);
+		TemplateMetaData out = new TemplateMetaData("generated_" + System.currentTimeMillis(), outputDims);
 		int ox = outputDims[0], oy = outputDims[1], oz = outputDims[2];
 
 		for(int x = 0; x < ox; x += stride) {
 			for(int y = 0; y < oy; y += stride) {
 				for(int z = 0; z < oz; z += stride) {
 					// Evaluate candidates by overlap with already-filled voxels in out
-					List<ScoredCandidate> scored = new ArrayList<ScoredCandidate>(candidates.size());
+					List<ScoredCandidate> scored = new ArrayList<>(candidates.size());
 					for(CandidatePatch cp : candidates) {
 						double score = 0.0;
 						int comparisons = 0;

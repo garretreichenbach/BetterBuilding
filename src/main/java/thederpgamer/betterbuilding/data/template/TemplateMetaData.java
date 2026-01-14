@@ -1,5 +1,6 @@
 package thederpgamer.betterbuilding.data.template;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
 import org.schema.game.common.data.VoidSegmentPiece;
 
@@ -36,21 +37,29 @@ public class TemplateMetaData {
 	public static TemplateMetaData fromRawTemplate(String name, CopyArea area) {
 		TemplateMetaData templateMetaData = new TemplateMetaData();
 		templateMetaData.name = name;
-		templateMetaData.dimensions = new int[]{area.getSize().x, area.getSize().y, area.getSize().z};
-		templateMetaData.blockTypes = new short[area.getSize().x * area.getSize().y * area.getSize().z];
-		templateMetaData.blockOrientations = new byte[area.getSize().x * area.getSize().y * area.getSize().z];
-		for(int x = 0; x < area.getSize().x; x++) {
-			for(int y = 0; y < area.getSize().y; y++) {
-				for(int z = 0; z < area.getSize().z; z++) {
-					VoidSegmentPiece piece = area.getPieces().get(x + y * area.getSize().x + z * area.getSize().x * area.getSize().y);
-					if(piece != null && piece.isValid()) {
-						int index = x + y * area.getSize().x + z * area.getSize().x * area.getSize().y;
+		templateMetaData.blockTypes = new short[0];
+		templateMetaData.blockOrientations = new byte[0];
+		ObjectArrayList<VoidSegmentPiece> pieces = area.getPieces();
+		//The pieces are stored in a flat list, but do not contain empty pieces, so we need to add them back in
+		int sizeX = area.max.x - area.min.x + 1;
+		int sizeY = area.max.y - area.min.y + 1;
+		int sizeZ = area.max.z - area.min.z + 1;
+		templateMetaData.dimensions = new int[] {sizeX, sizeY, sizeZ};
+		for(int z = 0; z < sizeZ; z++) {
+			for(int y = 0; y < sizeY; y++) {
+				for(int x = 0; x < sizeX; x++) {
+					int index = x + y * sizeX + z * sizeX * sizeY;
+					if(index < pieces.size()) {
+						VoidSegmentPiece piece = pieces.get(index);
+						templateMetaData.blockTypes = Arrays.copyOf(templateMetaData.blockTypes, templateMetaData.blockTypes.length + 1);
+						templateMetaData.blockOrientations = Arrays.copyOf(templateMetaData.blockOrientations, templateMetaData.blockOrientations.length + 1);
 						templateMetaData.blockTypes[index] = piece.getType();
 						templateMetaData.blockOrientations[index] = piece.getOrientation();
 					} else {
-						int index = x + y * area.getSize().x + z * area.getSize().x * area.getSize().y;
-						templateMetaData.blockTypes[index] = 0; // Default block type for empty space
-						templateMetaData.blockOrientations[index] = 0; // Default orientation for empty space
+						templateMetaData.blockTypes = Arrays.copyOf(templateMetaData.blockTypes, templateMetaData.blockTypes.length + 1);
+						templateMetaData.blockOrientations = Arrays.copyOf(templateMetaData.blockOrientations, templateMetaData.blockOrientations.length + 1);
+						templateMetaData.blockTypes[index] = 0; // Default to air
+						templateMetaData.blockOrientations[index] = 0; // Default orientation
 					}
 				}
 			}

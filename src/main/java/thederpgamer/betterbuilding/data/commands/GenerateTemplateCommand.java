@@ -24,7 +24,7 @@ import java.util.List;
 public class GenerateTemplateCommand implements CommandInterface {
 	@Override
 	public String getCommand() {
-		return "/bb_generate";
+		return "bb_generate";
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public class GenerateTemplateCommand implements CommandInterface {
 		File templatesFolder = new File("./templates");
 		List<TemplateMetaData> templates = new ArrayList<>();
 		for(String templateName : templateNames) {
-			File templateFile = new File(templatesFolder, templateName + ".stmpl");
+			File templateFile = new File(templatesFolder, templateName + ".smtpl");
 			if(templateFile.exists()) {
 				getBuildToolsManager().loadCopyArea(templateName);
 				CopyArea area = getBuildToolsManager().getCopyArea();
