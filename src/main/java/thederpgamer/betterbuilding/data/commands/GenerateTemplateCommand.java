@@ -58,7 +58,7 @@ public class GenerateTemplateCommand implements CommandInterface {
 				PlayerUtils.sendMessage(sender, "Template generated successfully with name: " + generated.getName());
 				CopyArea copyArea = generated.toRawTemplate();
 				copyArea.save(generated.getName());
-				getBuildToolsManager().load(generated.getName());
+				getBuildToolsManager().loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
 			} else {
 				PlayerUtils.sendMessage(sender, "Template generation failed: Selection size exceeds maximum allowed dimensions of " + TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + ".");
 			}

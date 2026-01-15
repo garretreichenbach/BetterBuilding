@@ -86,11 +86,10 @@ public class TemplateMetaData {
 					byte orientation = blockOrientations[index];
 					if(type != 0) { // Assuming 0 is the default block type for empty space
 						VoidSegmentPiece piece = new VoidSegmentPiece();
+						piece.voidPos.set(x, y, z);
 						piece.setType((short) type);
 						piece.setOrientation(orientation);
 						copyArea.getPieces().add(piece);
-					} else {
-						copyArea.getPieces().add(new VoidSegmentPiece()); // Add an empty piece
 					}
 				}
 			}

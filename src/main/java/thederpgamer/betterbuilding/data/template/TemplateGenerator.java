@@ -9,9 +9,9 @@ import java.util.*;
 public class TemplateGenerator {
 
 	// Default per-axis cap (32 => 32x32x32 maximum by default)
-	public static final int DEFAULT_MAX_DIM = 32;
+	public static final int DEFAULT_MAX_DIM = 64;
 	// Global toggle for ignoring air (block id == 0) during matching/voting
-	public static boolean IGNORE_AIR = true;
+	public static boolean IGNORE_AIR = false;
 
 	/**
 	 * Generate a new TemplateMetaData using the PatchSynthesizer algorithm.
@@ -41,10 +41,14 @@ public class TemplateGenerator {
 		// Collect candidate patches from inputs
 		List<CandidatePatch> candidates = new ArrayList<>();
 
+		// Gather RNG for deterministic sampling when capping per-input candidates
+		Random gatherRng = new Random(options.seed == 0L ? 0x9E3779B97F4A7C15L : options.seed ^ 0xC0FFEE);
+
 		outer:
 		for(TemplateMetaData t : inputs) {
 			int[] dims = t.getDimensions();
 			if(dims[0] < pSize || dims[1] < pSize || dims[2] < pSize) continue;
+			List<CandidatePatch> local = new ArrayList<>();
 			for(int x = 0; x <= dims[0] - pSize; x++) {
 				for(int y = 0; y <= dims[1] - pSize; y++) {
 					for(int z = 0; z <= dims[2] - pSize; z++) {
@@ -60,11 +64,21 @@ public class TemplateGenerator {
 								}
 							}
 						}
-						candidates.add(new CandidatePatch(pSize, types, orients));
-						if(options.maxCandidates > 0 && candidates.size() >= options.maxCandidates) {
-							break outer;
-						}
+						local.add(new CandidatePatch(pSize, types, orients));
 					}
+				}
+			}
+			// If configured, limit number of candidates taken from this input to improve mixing
+			if(options.maxCandidatesPerInput > 0 && local.size() > options.maxCandidatesPerInput) {
+				Collections.shuffle(local, gatherRng); // deterministic shuffle
+				for(int i = 0; i < options.maxCandidatesPerInput; i++) {
+					candidates.add(local.get(i));
+					if(options.maxCandidates > 0 && candidates.size() >= options.maxCandidates) break outer;
+				}
+			} else {
+				for(CandidatePatch cp : local) {
+					candidates.add(cp);
+					if(options.maxCandidates > 0 && candidates.size() >= options.maxCandidates) break outer;
 				}
 			}
 		}
@@ -74,75 +88,34 @@ public class TemplateGenerator {
 			return fillByMajority(inputs, outputDims, options);
 		}
 
-		// Deterministic RNG for selection
+		// Deterministic RNG for selection and shuffling
 		Random rng = new Random(options.seed);
 
 		TemplateMetaData out = new TemplateMetaData("generated_" + System.currentTimeMillis(), outputDims);
 		int ox = outputDims[0], oy = outputDims[1], oz = outputDims[2];
 
-		for(int x = 0; x < ox; x += stride) {
-			for(int y = 0; y < oy; y += stride) {
-				for(int z = 0; z < oz; z += stride) {
-					// Evaluate candidates by overlap with already-filled voxels in out
-					List<ScoredCandidate> scored = new ArrayList<>(candidates.size());
-					for(CandidatePatch cp : candidates) {
-						double score = 0.0;
-						int comparisons = 0;
-						// compare overlap region where out is non-air
-						for(int px = 0; px < pSize; px++) {
-							int gx = x + px;
-							if(gx < 0 || gx >= ox) continue;
-							for(int py = 0; py < pSize; py++) {
-								int gy = y + py;
-								if(gy < 0 || gy >= oy) continue;
-								for(int pz = 0; pz < pSize; pz++) {
-									int gz = z + pz;
-									if(gz < 0 || gz >= oz) continue;
-									int outType = out.getTypeAt(gx, gy, gz);
-									int candType = cp.getType(px, py, pz);
-									if(IGNORE_AIR && (outType == 0 || candType == 0)) continue;
-									comparisons++;
-									if(outType == candType) {
-										score += 1.0;
-										// orientation bonus if present and matches
-										if(out.getOrientationAt(gx, gy, gz) == cp.getOrient(px, py, pz)) {
-											score += 0.2;
-										}
-									}
-								}
-							}
-						}
-						// If no comparisons (no overlap yet), give neutral base score 0
-						// But encourage patches with more non-air voxels slightly
-						if(comparisons == 0) {
-							int nonAir = 0;
-							for(int v : cp.types) if(v != 0) nonAir++;
-							score = nonAir * 0.001; // small bias
-						} else {
-							score = score / comparisons; // normalize
-						}
-						scored.add(new ScoredCandidate(cp, score));
-					}
+		// Build anchor positions (cover whole volume with stride, anchors may be near edges)
+		List<int[]> anchors = new ArrayList<>();
+		for(int ax = 0; ax < ox; ax += stride) {
+			for(int ay = 0; ay < oy; ay += stride) {
+				for(int az = 0; az < oz; az += stride) {
+					anchors.add(new int[] {ax, ay, az});
+				}
+			}
+		}
 
-					// pick topK - sort descending by score
-					Collections.sort(scored, new Comparator<ScoredCandidate>() {
-						@Override
-						public int compare(ScoredCandidate a, ScoredCandidate b) {
-							return Double.compare(b.score, a.score); // descending
-						}
-					});
-
-					int k = Math.max(1, Math.min(options.topK, scored.size()));
-					int chosenIdx = 0;
-					if(k == 1 || !options.randomizeTieBreaks) {
-						chosenIdx = 0;
-					} else {
-						// pick uniformly from top-k using deterministic RNG
-						chosenIdx = rng.nextInt(k);
-					}
-					CandidatePatch chosen = scored.get(chosenIdx).candidate;
-
-					// Paste chosen patch into output (only write where out is currently air)
+		int passes = Math.max(1, options.passes);
+		for(int pass = 0; pass < passes; pass++) {
+			// shuffle anchors each pass (deterministic via rng)
+			Collections.shuffle(anchors, rng);
+			for(int[] a : anchors) {
+				int x = a[0], y = a[1], z = a[2];
+				// Evaluate candidates by overlap with already-filled voxels in out
+				List<ScoredCandidate> scored = new ArrayList<>(candidates.size());
+				for(CandidatePatch cp : candidates) {
+					double score = 0.0;
+					int comparisons = 0;
+					// compare overlap region where out is non-air
 					for(int px = 0; px < pSize; px++) {
 						int gx = x + px;
 						if(gx < 0 || gx >= ox) continue;
@@ -152,17 +125,69 @@ public class TemplateGenerator {
 							for(int pz = 0; pz < pSize; pz++) {
 								int gz = z + pz;
 								if(gz < 0 || gz >= oz) continue;
-								int curr = out.getTypeAt(gx, gy, gz);
-								short candType = chosen.getType(px, py, pz);
-								byte candOrient = chosen.getOrient(px, py, pz);
-								if(curr == 0 && candType != 0) {
-									out.setTypeAt(gx, gy, gz, candType);
-									out.setOrientationAt(gx, gy, gz, candOrient);
+								short outType = out.getTypeAt(gx, gy, gz);
+								short candType = cp.getType(px, py, pz);
+								if(IGNORE_AIR && (outType == 0 || candType == 0)) continue;
+								comparisons++;
+								if(outType == candType) {
+									score += 1.0;
+									// orientation bonus if present and matches
+									if(out.getOrientationAt(gx, gy, gz) == cp.getOrient(px, py, pz)) {
+										score += 0.2;
+									}
 								}
 							}
+							}
+						}
+					// If no comparisons (no overlap yet), give neutral base score 0
+					// But encourage patches with more non-air voxels slightly
+					if(comparisons == 0) {
+						int nonAir = 0;
+						for(short v : cp.types) if(v != 0) nonAir++;
+						score = nonAir * 0.001; // small bias
+					} else {
+						score = score / comparisons; // normalize
+					}
+					scored.add(new ScoredCandidate(cp, score));
+				}
+
+				// pick topK - sort descending by score
+				Collections.sort(scored, new Comparator<ScoredCandidate>() {
+					@Override
+					public int compare(ScoredCandidate a, ScoredCandidate b) {
+						return Double.compare(b.score, a.score); // descending
+					}
+				});
+
+				int k = Math.max(1, Math.min(options.topK, scored.size()));
+				int chosenIdx;
+				if(k == 1 || !options.randomizeTieBreaks) {
+					chosenIdx = 0;
+				} else {
+					// pick uniformly from top-k using deterministic RNG
+					chosenIdx = rng.nextInt(k);
+				}
+				CandidatePatch chosen = scored.get(chosenIdx).candidate;
+
+				// Paste chosen patch into output (overwrite existing voxels with candidate non-air)
+				for(int px = 0; px < pSize; px++) {
+					int gx = x + px;
+					if(gx < 0 || gx >= ox) continue;
+					for(int py = 0; py < pSize; py++) {
+						int gy = y + py;
+						if(gy < 0 || gy >= oy) continue;
+						for(int pz = 0; pz < pSize; pz++) {
+							int gz = z + pz;
+							if(gz < 0 || gz >= oz) continue;
+							short candType = chosen.getType(px, py, pz);
+							byte candOrient = chosen.getOrient(px, py, pz);
+							if(candType != 0) {
+								out.setTypeAt(gx, gy, gz, candType);
+								out.setOrientationAt(gx, gy, gz, candOrient);
+							}
+						}
 						}
 					}
-				}
 			}
 		}
 
@@ -271,6 +296,10 @@ public class TemplateGenerator {
 		public int maxCandidates;
 		/** Per-axis maximum dimension allowed for output (default DEFAULT_MAX_DIM) */
 		public int maxDimPerAxis = DEFAULT_MAX_DIM;
+		/** Number of passes over the anchor list (higher -> more mixing). */
+		public int passes = 3;
+		/** Max number of candidate patches to collect per input (0 = no cap) */
+		public int maxCandidatesPerInput = 0;
 
 		public GenerationOptions() {
 		}
