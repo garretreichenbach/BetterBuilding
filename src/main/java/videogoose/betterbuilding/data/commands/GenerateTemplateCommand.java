@@ -7,7 +7,7 @@ import api.utils.game.chat.CommandInterface;
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
-import org.schema.game.client.view.mainmenu.gui.catalogmanager.CatalogManagerPanel;
+import org.schema.game.client.controller.manager.ingame.CopyPasteMode;
 import org.schema.game.common.data.player.PlayerState;
 import videogoose.betterbuilding.BetterBuilding;
 import videogoose.betterbuilding.data.template.TemplateGenerator;
@@ -64,12 +64,12 @@ public class GenerateTemplateCommand implements CommandInterface {
 				return true;
 			}
 
-			final String description = args[0].replaceAll("^\"|\"$", "").trim();
-			final List<TemplateMetaData> references = new ArrayList<>();
+			String description = args[0].replaceAll("^\"|\"$", "").trim();
+			List<TemplateMetaData> references = new ArrayList<>();
 			if(args.length > 1) {
 				references.addAll(getTemplates(parseNames(args[1])));
 			}
-			final int[] outputDims = {size.x, size.y, size.z};
+			int[] outputDims = {size.x, size.y, size.z};
 
 			PlayerUtils.sendMessage(sender, "Generating template via AI... This may take a moment.");
 
@@ -78,8 +78,9 @@ public class GenerateTemplateCommand implements CommandInterface {
 					TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description);
 					CopyArea copyArea = generated.toRawTemplate();
 					copyArea.save(generated.getName());
-					getBuildToolsManager().loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
-					CatalogManagerPanel.updateLists();
+					BuildToolsManager btm = getBuildToolsManager();
+					btm.loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
+					btm.setCopyPasteMode(CopyPasteMode.PASTE);
 					PlayerUtils.sendMessage(sender, "Template generated: " + generated.getName());
 				} catch(Exception exception) {
 					PlayerUtils.sendMessage(sender, "Template generation failed: " + exception.getMessage());
