@@ -1,8 +1,10 @@
 package videogoose.betterbuilding.data.template;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
 import org.schema.game.common.data.VoidSegmentPiece;
+import org.schema.game.common.data.world.SegmentData;
 
 import java.util.Arrays;
 
@@ -67,19 +69,18 @@ public class TemplateMetaData {
 
 	public CopyArea toRawTemplate() {
 		CopyArea copyArea = new CopyArea();
-		copyArea.min = new org.schema.common.util.linAlg.Vector3i(0, 0, 0);
-		copyArea.max = new org.schema.common.util.linAlg.Vector3i(dimensions[0] - 1, dimensions[1] - 1, dimensions[2] - 1);
+		copyArea.min = new Vector3i(0, 0, 0);
+		copyArea.max = new Vector3i(dimensions[0] - 1, dimensions[1] - 1, dimensions[2] - 1);
 		for(int x = 0; x < dimensions[0]; x++) {
 			for(int y = 0; y < dimensions[1]; y++) {
 				for(int z = 0; z < dimensions[2]; z++) {
 					int index = x + y * dimensions[0] + z * dimensions[0] * dimensions[1];
 					int type = blockTypes[index];
 					byte orientation = blockOrientations[index];
-					if(type != 0) { // Assuming 0 is the default block type for empty space
+					if(type != 0) {
 						VoidSegmentPiece piece = new VoidSegmentPiece();
 						piece.voidPos.set(x, y, z);
-						piece.setType((short) type);
-						piece.setOrientation(orientation);
+						piece.setDataByReference(SegmentData.makeDataInt((short) type, orientation));
 						copyArea.getPieces().add(piece);
 					}
 				}
