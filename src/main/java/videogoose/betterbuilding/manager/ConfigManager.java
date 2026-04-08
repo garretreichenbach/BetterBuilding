@@ -8,13 +8,15 @@ public class ConfigManager {
 	private static FileConfiguration mainConfig;
 
 	private static final String[] defaultMainConfig = {
-			"provider: ollama",
-			"lmstudio-url: http__//localhost__1234",
+			"provider: lmstudio",
+			"lmstudio-host: localhost",
+			"lmstudio-port: 1234",
 			"lmstudio-model: default",
 			"lmstudio-temperature: 0.7",
 			"lmstudio-max-tokens: 64000",
 			"lmstudio-timeout-ms: 120000",
-			"ollama-url: http__//localhost__11434",
+			"ollama-host: localhost",
+			"ollama-port: 11434",
 			"ollama-model: gemma4"
 	};
 
@@ -23,24 +25,14 @@ public class ConfigManager {
 		mainConfig.saveDefault(defaultMainConfig);
 	}
 
-	public static FileConfiguration getMainConfig() {
-		return mainConfig;
-	}
-
 	public static String getProvider() {
 		return mainConfig.getConfigurableValue("provider", "lmstudio").toLowerCase().trim();
 	}
 
-	public static String getOllamaUrl() {
-		return mainConfig.getConfigurableValue("ollama-url", "http__//localhost__11434").replace("__", ":");
-	}
-
-	public static String getOllamaModel() {
-		return mainConfig.getConfigurableValue("ollama-model", "gemma4");
-	}
-
 	public static String getLMStudioUrl() {
-		return mainConfig.getConfigurableValue("lmstudio-url", "http__//localhost__1234").replace("__", ":");
+		String host = mainConfig.getConfigurableValue("lmstudio-host", "localhost").trim();
+		int port = getLMStudioPort();
+		return "http://" + host + ":" + port;
 	}
 
 	public static String getLMStudioModel() {
@@ -68,6 +60,32 @@ public class ConfigManager {
 			return Integer.parseInt(mainConfig.getConfigurableValue("lmstudio-timeout-ms", "120000"));
 		} catch(NumberFormatException e) {
 			return 120000;
+		}
+	}
+
+	public static String getOllamaUrl() {
+		String host = mainConfig.getConfigurableValue("ollama-host", "localhost").trim();
+		int port = getOllamaPort();
+		return "http://" + host + ":" + port;
+	}
+
+	public static String getOllamaModel() {
+		return mainConfig.getConfigurableValue("ollama-model", "gemma4");
+	}
+
+	private static int getLMStudioPort() {
+		try {
+			return Integer.parseInt(mainConfig.getConfigurableValue("lmstudio-port", "1234").trim());
+		} catch(NumberFormatException e) {
+			return 1234;
+		}
+	}
+
+	private static int getOllamaPort() {
+		try {
+			return Integer.parseInt(mainConfig.getConfigurableValue("ollama-port", "11434").trim());
+		} catch(NumberFormatException e) {
+			return 11434;
 		}
 	}
 }
