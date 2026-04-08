@@ -69,6 +69,11 @@ public class GenerateTemplateCommand implements CommandInterface {
 				return true;
 			}
 
+			if(size.x <= 1 || size.y <= 1 || size.z <= 1) {
+				PlayerUtils.sendMessage(sender, "Selection size must be at least 2x2x2.");
+				return true;
+			}
+
 			String description = args[0].replaceAll("^\"|\"$", "").trim();
 			List<TemplateMetaData> references = new ArrayList<>();
 			if(args.length > 1) {

@@ -53,6 +53,7 @@ public class TemplateMetaData {
 			int rx = piece.voidPos.x - area.min.x;
 			int ry = piece.voidPos.y - area.min.y;
 			int rz = piece.voidPos.z - area.min.z;
+			if(rx < 0 || rx >= sizeX || ry < 0 || ry >= sizeY || rz < 0 || rz >= sizeZ) continue;
 			int index = rx + ry * sizeX + rz * sizeX * sizeY;
 			templateMetaData.blockTypes[index] = piece.getType();
 			templateMetaData.blockOrientations[index] = piece.getOrientation();

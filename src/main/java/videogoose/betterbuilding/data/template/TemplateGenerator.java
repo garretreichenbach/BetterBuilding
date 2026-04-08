@@ -52,7 +52,15 @@ public class TemplateGenerator {
 		JsonObject aiResponse = client.chatCompletion(systemPrompt, userPrompt, responseSchema);
 		BetterBuilding.getInstance().logInfo("Received " + providerName + " response, building template...");
 
-		TemplateMetaData result = new TemplateMetaData("ai_generated_" + System.currentTimeMillis(), outputDims);
+		String name = "ai_generated_" + System.currentTimeMillis();
+		if(aiResponse.has("name")) {
+			String aiName = aiResponse.get("name").getAsString().trim()
+					.replaceAll("[^a-zA-Z0-9_\\-]", "_")
+					.replaceAll("_+", "_");
+			if(!aiName.isEmpty()) name = aiName;
+		}
+
+		TemplateMetaData result = new TemplateMetaData(name, outputDims);
 		applyOperations(result, aiResponse, outputDims);
 
 		return result;
@@ -92,7 +100,9 @@ public class TemplateGenerator {
 				"- place: places individual blocks at specific positions\n" +
 				"- line: draws a line of blocks between two points\n" +
 				"- clear: sets a rectangular region to air (type 0)\n\n" +
-				"Operations are applied in order, so later operations overwrite earlier ones.";
+				"Operations are applied in order, so later operations overwrite earlier ones.\n\n" +
+				"NAME:\n" +
+				"- Also provide a short, descriptive snake_case name for the template (e.g. \"small_fighter\", \"orbital_station\")";
 	}
 
 	private static String buildUserPrompt(List<TemplateMetaData> references, int[] dims, String description) {
@@ -207,8 +217,13 @@ public class TemplateGenerator {
 		operationsArray.add("items", operationItem);
 		properties.add("operations", operationsArray);
 
+		JsonObject nameField = new JsonObject();
+		nameField.addProperty("type", "string");
+		properties.add("name", nameField);
+
 		schema.add("properties", properties);
 		JsonArray required = new JsonArray();
+		required.add(new JsonPrimitive("name"));
 		required.add(new JsonPrimitive("operations"));
 		schema.add("required", required);
 
