@@ -8,7 +8,7 @@ public class ConfigManager {
 	private static FileConfiguration mainConfig;
 
 	private static final String[] defaultMainConfig = {
-			"lmstudio-url: http://localhost:1234",
+			"lmstudio-url: http__//localhost__1234",
 			"lmstudio-model: default",
 			"lmstudio-temperature: 0.7",
 			"lmstudio-max-tokens: 4096",
@@ -25,7 +25,7 @@ public class ConfigManager {
 	}
 
 	public static String getLMStudioUrl() {
-		return mainConfig.getConfigurableValue("lmstudio-url", "http://localhost:1234");
+		return mainConfig.getConfigurableValue("lmstudio-url", "http__//localhost__1234").replace("__", ":");
 	}
 
 	public static String getLMStudioModel() {

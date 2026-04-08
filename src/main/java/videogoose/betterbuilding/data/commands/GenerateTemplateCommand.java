@@ -72,7 +72,7 @@ public class GenerateTemplateCommand implements CommandInterface {
 			}
 
 			PlayerUtils.sendMessage(sender, "Generating template via AI... This may take a moment.");
-			int[] outputDims = new int[] {size.x, size.y, size.z};
+			int[] outputDims = {size.x, size.y, size.z};
 			TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description);
 			PlayerUtils.sendMessage(sender, "Template generated: " + generated.getName());
 
