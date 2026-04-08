@@ -37,32 +37,23 @@ public class TemplateMetaData {
 	public static TemplateMetaData fromRawTemplate(String name, CopyArea area) {
 		TemplateMetaData templateMetaData = new TemplateMetaData();
 		templateMetaData.name = name;
-		templateMetaData.blockTypes = new short[0];
-		templateMetaData.blockOrientations = new byte[0];
-		ObjectArrayList<VoidSegmentPiece> pieces = area.getPieces();
-		//The pieces are stored in a flat list, but do not contain empty pieces, so we need to add them back in
 		int sizeX = area.max.x - area.min.x + 1;
 		int sizeY = area.max.y - area.min.y + 1;
 		int sizeZ = area.max.z - area.min.z + 1;
 		templateMetaData.dimensions = new int[] {sizeX, sizeY, sizeZ};
-		for(int z = 0; z < sizeZ; z++) {
-			for(int y = 0; y < sizeY; y++) {
-				for(int x = 0; x < sizeX; x++) {
-					int index = x + y * sizeX + z * sizeX * sizeY;
-					if(index < pieces.size()) {
-						VoidSegmentPiece piece = pieces.get(index);
-						templateMetaData.blockTypes = Arrays.copyOf(templateMetaData.blockTypes, templateMetaData.blockTypes.length + 1);
-						templateMetaData.blockOrientations = Arrays.copyOf(templateMetaData.blockOrientations, templateMetaData.blockOrientations.length + 1);
-						templateMetaData.blockTypes[index] = piece.getType();
-						templateMetaData.blockOrientations[index] = piece.getOrientation();
-					} else {
-						templateMetaData.blockTypes = Arrays.copyOf(templateMetaData.blockTypes, templateMetaData.blockTypes.length + 1);
-						templateMetaData.blockOrientations = Arrays.copyOf(templateMetaData.blockOrientations, templateMetaData.blockOrientations.length + 1);
-						templateMetaData.blockTypes[index] = 0; // Default to air
-						templateMetaData.blockOrientations[index] = 0; // Default orientation
-					}
-				}
-			}
+		int totalSize = sizeX * sizeY * sizeZ;
+		templateMetaData.blockTypes = new short[totalSize];
+		templateMetaData.blockOrientations = new byte[totalSize];
+		// Pieces are sparse — only non-empty blocks are stored, each with its own voidPos
+		ObjectArrayList<VoidSegmentPiece> pieces = area.getPieces();
+		for(int i = 0; i < pieces.size(); i++) {
+			VoidSegmentPiece piece = pieces.get(i);
+			int rx = piece.voidPos.x - area.min.x;
+			int ry = piece.voidPos.y - area.min.y;
+			int rz = piece.voidPos.z - area.min.z;
+			int index = rx + ry * sizeX + rz * sizeX * sizeY;
+			templateMetaData.blockTypes[index] = piece.getType();
+			templateMetaData.blockOrientations[index] = piece.getOrientation();
 		}
 		return templateMetaData;
 	}
