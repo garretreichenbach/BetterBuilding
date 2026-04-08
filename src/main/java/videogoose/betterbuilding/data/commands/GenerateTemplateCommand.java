@@ -8,6 +8,10 @@ import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
 import org.schema.game.client.controller.manager.ingame.CopyPasteMode;
+import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
+import org.schema.game.client.view.gui.advanced.AdvancedGUIGroup;
+import org.schema.game.client.view.gui.advancedbuildmode.AdvancedBuildMode;
+import org.schema.game.client.view.gui.advancedbuildmode.AdvancedBuildModeSelection;
 import org.schema.game.common.data.player.PlayerState;
 import videogoose.betterbuilding.BetterBuilding;
 import videogoose.betterbuilding.data.template.TemplateGenerator;
@@ -15,6 +19,7 @@ import videogoose.betterbuilding.data.template.TemplateMetaData;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -81,6 +86,7 @@ public class GenerateTemplateCommand implements CommandInterface {
 					BuildToolsManager btm = getBuildToolsManager();
 					btm.loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
 					btm.setCopyPasteMode(CopyPasteMode.PASTE);
+					refreshAdvancedBuildModeTemplateList();
 					PlayerUtils.sendMessage(sender, "Template generated: " + generated.getName());
 				} catch(Exception exception) {
 					PlayerUtils.sendMessage(sender, "Template generation failed: " + exception.getMessage());
