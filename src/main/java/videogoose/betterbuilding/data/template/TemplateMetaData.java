@@ -94,6 +94,10 @@ public class TemplateMetaData {
 		return name;
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	public int[] getDimensions() {
 		return Arrays.copyOf(dimensions, dimensions.length);
 	}
