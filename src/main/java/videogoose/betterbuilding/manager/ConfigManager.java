@@ -14,7 +14,7 @@ public class ConfigManager {
 			"lmstudio-model: default",
 			"lmstudio-temperature: 0.7",
 			"lmstudio-max-tokens: 64000",
-			"lmstudio-timeout-ms: 120000",
+			"lmstudio-timeout-ms: 1200000",
 			"ollama-host: localhost",
 			"ollama-port: 11434",
 			"ollama-model: gemma4"
@@ -57,7 +57,7 @@ public class ConfigManager {
 
 	public static int getLMStudioTimeout() {
 		try {
-			return Integer.parseInt(mainConfig.getConfigurableValue("lmstudio-timeout-ms", "120000"));
+			return Integer.parseInt(mainConfig.getConfigurableValue("lmstudio-timeout-ms", "1200000"));
 		} catch(NumberFormatException e) {
 			return 120000;
 		}
