@@ -44,11 +44,6 @@ public class TemplateGenerator {
 				ConfigManager.getLMStudioTimeout()
 		);
 
-		if(!client.testConnection()) {
-			throw new Exception("Cannot connect to " + providerName + " at " + url +
-					". Ensure " + providerName + " is running with the server enabled.");
-		}
-
 		String systemPrompt = buildSystemPrompt();
 		String userPrompt = buildUserPrompt(references, outputDims, description);
 		JsonObject responseSchema = buildResponseSchema();
