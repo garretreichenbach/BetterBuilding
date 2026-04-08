@@ -19,9 +19,13 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * @author VideoGoose (TheDerpGamer)
+ * Chat command that generates a building template using AI via LM Studio.
+ * Usage: /bb_generate <description> [template_refs...]
+ * The description is the first argument. Any additional quoted template names
+ * are loaded as style references for the AI.
  */
 public class GenerateTemplateCommand implements CommandInterface {
+
 	@Override
 	public String getCommand() {
 		return "bb_generate";
@@ -34,8 +38,9 @@ public class GenerateTemplateCommand implements CommandInterface {
 
 	@Override
 	public String getDescription() {
-		return "Generates a building template using the provided template names and the size of the player's build current selection.\n" +
-				"Usage: /bb_generate <\"template_1\",\"template_2\",...>";
+		return "Generates a building template using AI based on your description and the size of your current selection.\n" +
+				"Usage: /bb_generate <description> [\"ref_template_1\",\"ref_template_2\",...]\n" +
+				"Example: /bb_generate \"small fighter ship\" \"my_corvette\",\"scout_ship\"";
 	}
 
 	@Override
@@ -46,25 +51,37 @@ public class GenerateTemplateCommand implements CommandInterface {
 	@Override
 	public boolean onCommand(PlayerState sender, String[] args) {
 		try {
-			Vector3i size = getBuildToolsManager().getSize();
-			if(size.x <= TemplateGenerator.DEFAULT_MAX_DIM && size.y <= TemplateGenerator.DEFAULT_MAX_DIM && size.z <= TemplateGenerator.DEFAULT_MAX_DIM) {
-				List<String> templateNames = parseNames(args[0]);
-				List<TemplateMetaData> templates = getTemplates(templateNames);
-				if(templates.isEmpty()) {
-					PlayerUtils.sendMessage(sender, "No valid templates found with the provided names.");
-					return true;
-				}
-				TemplateMetaData generated = TemplateGenerator.generate(templates, new int[] {size.x, size.y, size.z}, new TemplateGenerator.GenerationOptions());
-				PlayerUtils.sendMessage(sender, "Template generated successfully with name: " + generated.getName());
-				CopyArea copyArea = generated.toRawTemplate();
-				copyArea.save(generated.getName());
-				getBuildToolsManager().loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
-			} else {
-				PlayerUtils.sendMessage(sender, "Template generation failed: Selection size exceeds maximum allowed dimensions of " + TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + ".");
+			if(args.length < 1) {
+				PlayerUtils.sendMessage(sender, "Usage: /bb_generate <description> [\"ref1\",\"ref2\",...]");
+				return true;
 			}
+
+			Vector3i size = getBuildToolsManager().getSize();
+			if(size.x > TemplateGenerator.DEFAULT_MAX_DIM || size.y > TemplateGenerator.DEFAULT_MAX_DIM || size.z > TemplateGenerator.DEFAULT_MAX_DIM) {
+				PlayerUtils.sendMessage(sender, "Selection size exceeds maximum allowed dimensions of " +
+						TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + ".");
+				return true;
+			}
+
+			String description = args[0].replaceAll("^\"|\"$", "").trim();
+
+			List<TemplateMetaData> references = new ArrayList<>();
+			if(args.length > 1) {
+				List<String> templateNames = parseNames(args[1]);
+				references = getTemplates(templateNames);
+			}
+
+			PlayerUtils.sendMessage(sender, "Generating template via AI... This may take a moment.");
+			int[] outputDims = new int[] {size.x, size.y, size.z};
+			TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description);
+			PlayerUtils.sendMessage(sender, "Template generated: " + generated.getName());
+
+			CopyArea copyArea = generated.toRawTemplate();
+			copyArea.save(generated.getName());
+			getBuildToolsManager().loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
 		} catch(Exception exception) {
-			PlayerUtils.sendMessage(sender, "An error occurred while generating the template: " + exception.getMessage());
-			exception.printStackTrace();
+			PlayerUtils.sendMessage(sender, "Template generation failed: " + exception.getMessage());
+			BetterBuilding.getInstance().logException("Template generation failed", exception);
 		}
 		return true;
 	}
@@ -78,10 +95,7 @@ public class GenerateTemplateCommand implements CommandInterface {
 				getBuildToolsManager().loadCopyArea(templateName);
 				CopyArea area = getBuildToolsManager().getCopyArea();
 				if(area != null) {
-					TemplateMetaData templateMetaData = TemplateMetaData.fromRawTemplate(templateName, area);
-					templates.add(templateMetaData);
-				} else {
-					throw new Exception("Failed to load copy area for template: " + templateName);
+					templates.add(TemplateMetaData.fromRawTemplate(templateName, area));
 				}
 			}
 		}
@@ -102,7 +116,6 @@ public class GenerateTemplateCommand implements CommandInterface {
 
 	@Override
 	public void serverAction(@Nullable PlayerState sender, String[] args) {
-
 	}
 
 	@Override

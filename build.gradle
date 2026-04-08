@@ -4,8 +4,8 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '5.2.0'
 }
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 def starmadeDirectory = project.property("starmade_root")
 def modName = project.property("mod_name")
@@ -26,6 +26,7 @@ dependencies {
     implementation(files(starmadeDirectory + "StarMade.jar"))
     implementation(fileTree(dir: (starmadeDirectory + "lib"), include: "*.jar"))
     implementation(fileTree(dir: ("lib"), include: "*.jar"))
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 compileJava.options.encoding = 'UTF-8'
