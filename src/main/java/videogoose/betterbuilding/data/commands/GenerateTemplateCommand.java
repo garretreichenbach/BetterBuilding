@@ -107,16 +107,13 @@ public class GenerateTemplateCommand implements CommandInterface {
 	}
 
 	private List<TemplateMetaData> getTemplates(List<String> templateNames) throws Exception {
-		File templatesFolder = new File("./templates");
 		List<TemplateMetaData> templates = new ArrayList<>();
 		for(String templateName : templateNames) {
-			File templateFile = new File(templatesFolder, templateName + ".smtpl");
+			File templateFile = new File("./templates", templateName + ".smtpl");
 			if(templateFile.exists()) {
-				getBuildToolsManager().loadCopyArea(templateName);
-				CopyArea area = getBuildToolsManager().getCopyArea();
-				if(area != null) {
-					templates.add(TemplateMetaData.fromRawTemplate(templateName, area));
-				}
+				CopyArea area = new CopyArea();
+				area.load(templateFile);
+				templates.add(TemplateMetaData.fromRawTemplate(templateName, area));
 			}
 		}
 		return templates;
