@@ -7,6 +7,7 @@ import api.utils.game.chat.CommandInterface;
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
+import org.schema.game.client.view.mainmenu.gui.catalogmanager.CatalogManagerPanel;
 import org.schema.game.common.data.player.PlayerState;
 import videogoose.betterbuilding.BetterBuilding;
 import videogoose.betterbuilding.data.template.TemplateGenerator;
@@ -78,6 +79,7 @@ public class GenerateTemplateCommand implements CommandInterface {
 					CopyArea copyArea = generated.toRawTemplate();
 					copyArea.save(generated.getName());
 					getBuildToolsManager().loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
+					CatalogManagerPanel.updateLists();
 					PlayerUtils.sendMessage(sender, "Template generated: " + generated.getName());
 				} catch(Exception exception) {
 					PlayerUtils.sendMessage(sender, "Template generation failed: " + exception.getMessage());
