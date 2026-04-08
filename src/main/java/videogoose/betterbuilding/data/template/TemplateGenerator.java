@@ -31,26 +31,31 @@ public class TemplateGenerator {
 	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description) throws Exception {
 		validateDimensions(outputDims);
 
+		boolean useOllama = "ollama".equals(ConfigManager.getProvider());
+		String url = useOllama ? ConfigManager.getOllamaUrl() : ConfigManager.getLMStudioUrl();
+		String model = useOllama ? ConfigManager.getOllamaModel() : ConfigManager.getLMStudioModel();
+		String providerName = useOllama ? "Ollama" : "LM Studio";
+
 		LMStudioClient client = new LMStudioClient(
-				ConfigManager.getLMStudioUrl(),
-				ConfigManager.getLMStudioModel(),
+				url,
+				model,
 				ConfigManager.getLMStudioTemperature(),
 				ConfigManager.getLMStudioMaxTokens(),
 				ConfigManager.getLMStudioTimeout()
 		);
 
 		if(!client.testConnection()) {
-			throw new Exception("Cannot connect to LM Studio at " + ConfigManager.getLMStudioUrl() +
-					". Ensure LM Studio is running with the server enabled.");
+			throw new Exception("Cannot connect to " + providerName + " at " + url +
+					". Ensure " + providerName + " is running with the server enabled.");
 		}
 
 		String systemPrompt = buildSystemPrompt();
 		String userPrompt = buildUserPrompt(references, outputDims, description);
 		JsonObject responseSchema = buildResponseSchema();
 
-		BetterBuilding.getInstance().logInfo("Sending template generation request to LM Studio...");
+		BetterBuilding.getInstance().logInfo("Sending template generation request to " + providerName + "...");
 		JsonObject aiResponse = client.chatCompletion(systemPrompt, userPrompt, responseSchema);
-		BetterBuilding.getInstance().logInfo("Received AI response, building template...");
+		BetterBuilding.getInstance().logInfo("Received " + providerName + " response, building template...");
 
 		TemplateMetaData result = new TemplateMetaData("ai_generated_" + System.currentTimeMillis(), outputDims);
 		applyOperations(result, aiResponse, outputDims);

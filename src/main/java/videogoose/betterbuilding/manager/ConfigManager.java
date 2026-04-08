@@ -8,11 +8,14 @@ public class ConfigManager {
 	private static FileConfiguration mainConfig;
 
 	private static final String[] defaultMainConfig = {
+			"provider: ollama",
 			"lmstudio-url: http__//localhost__1234",
 			"lmstudio-model: default",
 			"lmstudio-temperature: 0.7",
-			"lmstudio-max-tokens: 4096",
-			"lmstudio-timeout-ms: 120000"
+			"lmstudio-max-tokens: 64000",
+			"lmstudio-timeout-ms: 120000",
+			"ollama-url: http__//localhost__11434",
+			"ollama-model: gemma4"
 	};
 
 	public static void initialize(BetterBuilding instance) {
@@ -22,6 +25,18 @@ public class ConfigManager {
 
 	public static FileConfiguration getMainConfig() {
 		return mainConfig;
+	}
+
+	public static String getProvider() {
+		return mainConfig.getConfigurableValue("provider", "lmstudio").toLowerCase().trim();
+	}
+
+	public static String getOllamaUrl() {
+		return mainConfig.getConfigurableValue("ollama-url", "http__//localhost__11434").replace("__", ":");
+	}
+
+	public static String getOllamaModel() {
+		return mainConfig.getConfigurableValue("ollama-model", "gemma4");
 	}
 
 	public static String getLMStudioUrl() {
@@ -42,7 +57,7 @@ public class ConfigManager {
 
 	public static int getLMStudioMaxTokens() {
 		try {
-			return Integer.parseInt(mainConfig.getConfigurableValue("lmstudio-max-tokens", "4096"));
+			return Integer.parseInt(mainConfig.getConfigurableValue("lmstudio-max-tokens", "64000"));
 		} catch(NumberFormatException e) {
 			return 4096;
 		}
