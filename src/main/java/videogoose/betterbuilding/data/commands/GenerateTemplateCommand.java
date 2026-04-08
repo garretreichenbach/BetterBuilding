@@ -141,4 +141,23 @@ public class GenerateTemplateCommand implements CommandInterface {
 	private static BuildToolsManager getBuildToolsManager() {
 		return GameClient.getClientState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager();
 	}
+
+	private static void refreshAdvancedBuildModeTemplateList() {
+		try {
+			AdvancedBuildMode abm = GameClient.getClientState().getWorldDrawer().getGuiDrawer().getPlayerPanel().advancedBuildMode;
+			Field groupField = AdvancedGUIElement.class.getDeclaredField("group");
+			groupField.setAccessible(true);
+			List<AdvancedGUIGroup> groups = (List<AdvancedGUIGroup>) groupField.get(abm);
+			for(AdvancedGUIGroup group : groups) {
+				if(group instanceof AdvancedBuildModeSelection) {
+					Field dirtyField = AdvancedBuildModeSelection.class.getDeclaredField("dirty");
+					dirtyField.setAccessible(true);
+					dirtyField.setBoolean(group, true);
+					break;
+				}
+			}
+		} catch(Exception e) {
+			BetterBuilding.getInstance().logWarning("Failed to refresh template list: " + e.getMessage());
+		}
+	}
 }
