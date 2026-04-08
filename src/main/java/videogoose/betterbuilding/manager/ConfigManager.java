@@ -1,7 +1,7 @@
-package thederpgamer.betterbuilding.manager;
+package videogoose.betterbuilding.manager;
 
 import api.mod.config.FileConfiguration;
-import thederpgamer.betterbuilding.BetterBuilding;
+import videogoose.betterbuilding.BetterBuilding;
 
 public class ConfigManager {
 

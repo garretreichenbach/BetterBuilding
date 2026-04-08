@@ -1,12 +1,13 @@
-package thederpgamer.betterbuilding.data.template;
+package videogoose.betterbuilding.data.template;
 
-import api.element.block.Blocks;
+import api.utils.element.Blocks;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import thederpgamer.betterbuilding.BetterBuilding;
-import thederpgamer.betterbuilding.manager.ConfigManager;
-import thederpgamer.betterbuilding.manager.LMStudioClient;
+import com.google.gson.JsonPrimitive;
+import videogoose.betterbuilding.BetterBuilding;
+import videogoose.betterbuilding.manager.ConfigManager;
+import videogoose.betterbuilding.manager.LMStudioClient;
 
 import java.util.List;
 
@@ -80,6 +81,7 @@ public class TemplateGenerator {
 				//"- POWER_CAPACITOR (" + Blocks.POWER_CAPACITOR.getId() + ") provides energy\n" +
 				//"- SHIELD_CAPACITOR (" + Blocks.SHIELD_CAPACITOR.getId() + ") and SHIELD_RECHARGER (" + Blocks.SHIELD_RECHARGER.getId() + ") provide defense\n" +
 				//"- Weapon systems need a computer block (e.g. CANNON_COMPUTER=" + Blocks.CANNON_COMPUTER.getId() + ") linked to modules (CANNON_BARREL=" + Blocks.CANNON_BARREL.getId() + ")\n" +
+				"- Sections generated should be hollow, unless otherwise specified, so users can fill them with system blocks\n" +
 				"- Use hull blocks (GREY_HULL=" + Blocks.GREY_HULL.getId() + ", GREY_STANDARD_ARMOR=" + Blocks.GREY_STANDARD_ARMOR.getId() + ", etc.) for the main body\n" +
 				"- Wedge/corner/hepta/tetra/slab variants exist for shaping (e.g. GREY_HULL_WEDGE=" + Blocks.GREY_HULL_WEDGE.getId() + ")\n" +
 				"- GLASS (" + Blocks.GLASS.getId() + ") is good for cockpit windows\n" +
@@ -141,11 +143,11 @@ public class TemplateGenerator {
 		JsonObject opType = new JsonObject();
 		opType.addProperty("type", "string");
 		JsonArray enumValues = new JsonArray();
-		enumValues.add("fill");
-		enumValues.add("shell");
-		enumValues.add("place");
-		enumValues.add("line");
-		enumValues.add("clear");
+		enumValues.add(new JsonPrimitive("fill"));
+		enumValues.add(new JsonPrimitive("shell"));
+		enumValues.add(new JsonPrimitive("place"));
+		enumValues.add(new JsonPrimitive("line"));
+		enumValues.add(new JsonPrimitive("clear"));
 		opType.add("enum", enumValues);
 		opProps.add("op_type", opType);
 
@@ -199,7 +201,7 @@ public class TemplateGenerator {
 
 		operationItem.add("properties", opProps);
 		JsonArray requiredOp = new JsonArray();
-		requiredOp.add("op_type");
+		requiredOp.add(new JsonPrimitive("op_type"));
 		operationItem.add("required", requiredOp);
 
 		operationsArray.add("items", operationItem);
@@ -207,7 +209,7 @@ public class TemplateGenerator {
 
 		schema.add("properties", properties);
 		JsonArray required = new JsonArray();
-		required.add("operations");
+		required.add(new JsonPrimitive("operations"));
 		schema.add("required", required);
 
 		return schema;

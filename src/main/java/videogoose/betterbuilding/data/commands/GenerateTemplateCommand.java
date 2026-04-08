@@ -1,4 +1,4 @@
-package thederpgamer.betterbuilding.data.commands;
+package videogoose.betterbuilding.data.commands;
 
 import api.common.GameClient;
 import api.mod.StarMod;
@@ -8,9 +8,9 @@ import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
 import org.schema.game.common.data.player.PlayerState;
-import thederpgamer.betterbuilding.BetterBuilding;
-import thederpgamer.betterbuilding.data.template.TemplateGenerator;
-import thederpgamer.betterbuilding.data.template.TemplateMetaData;
+import videogoose.betterbuilding.BetterBuilding;
+import videogoose.betterbuilding.data.template.TemplateGenerator;
+import videogoose.betterbuilding.data.template.TemplateMetaData;
 
 import javax.annotation.Nullable;
 import java.io.File;

@@ -1,12 +1,12 @@
 {
   "name": "BetterBuilding",
-  "author": "TheDerpGamer",
+  "author": "VideoGoose",
   "description": "A small mod with helpful building tools and utilities",
   "version": "2.0.0",
-  "starmade_version": "0.204.609",
+  "starmade_version": "0.205.4",
   "client_mod": true,
   "server_mod": false,
-  "main_class": "thederpgamer.betterbuilding.BetterBuilding",
+  "main_class": "videogoose.betterbuilding.BetterBuilding",
   "smd_resource_id": 8219,
   "dependencies": [
     -1

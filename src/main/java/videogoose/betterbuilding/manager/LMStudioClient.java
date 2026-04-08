@@ -1,9 +1,8 @@
-package thederpgamer.betterbuilding.manager;
+package videogoose.betterbuilding.manager;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import thederpgamer.betterbuilding.BetterBuilding;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -66,13 +65,13 @@ public class LMStudioClient {
 			}
 
 			String responseBody = readStream(conn.getInputStream());
-			JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
+			JsonObject response = new JsonParser().parse(responseBody).getAsJsonObject();
 			String content = response.getAsJsonArray("choices")
 					.get(0).getAsJsonObject()
 					.getAsJsonObject("message")
 					.get("content").getAsString();
 
-			return JsonParser.parseString(content).getAsJsonObject();
+			return new JsonParser().parse(content).getAsJsonObject();
 		} finally {
 			if(conn != null) conn.disconnect();
 		}

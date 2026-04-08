@@ -1,6 +1,7 @@
-package thederpgamer.betterbuilding.data.template;
+package videogoose.betterbuilding.data.template;
 
-import api.element.block.Blocks;
+
+import api.utils.element.Blocks;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

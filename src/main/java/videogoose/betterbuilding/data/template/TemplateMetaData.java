@@ -1,4 +1,4 @@
-package thederpgamer.betterbuilding.data.template;
+package videogoose.betterbuilding.data.template;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.schema.game.client.controller.manager.ingame.CopyArea;

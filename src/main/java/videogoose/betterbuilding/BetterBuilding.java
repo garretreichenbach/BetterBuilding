@@ -1,9 +1,9 @@
-package thederpgamer.betterbuilding;
+package videogoose.betterbuilding;
 
 import api.mod.StarLoader;
 import api.mod.StarMod;
-import thederpgamer.betterbuilding.data.commands.GenerateTemplateCommand;
-import thederpgamer.betterbuilding.manager.ConfigManager;
+import videogoose.betterbuilding.data.commands.GenerateTemplateCommand;
+import videogoose.betterbuilding.manager.ConfigManager;
 
 /**
  * Main class for BetterBuilding StarMade mod.
