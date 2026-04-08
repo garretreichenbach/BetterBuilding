@@ -320,17 +320,20 @@ public class TemplateGenerator {
 	}
 
 	private static void applyPlace(TemplateMetaData template, JsonObject op, int[] dims) {
-		if(!op.has("blocks")) return;
-		JsonArray blocks = op.getAsJsonArray("blocks");
-		for(JsonElement blockEl : blocks) {
-			JsonObject block = blockEl.getAsJsonObject();
-			int[] pos = getCoordArray(block, "pos");
-			short type = block.has("type") ? block.get("type").getAsShort() : 0;
-			byte orient = block.has("orientation") ? block.get("orientation").getAsByte() : 0;
-			if(inBounds(pos[0], pos[1], pos[2], dims)) {
-				template.setTypeAt(pos[0], pos[1], pos[2], type);
-				template.setOrientationAt(pos[0], pos[1], pos[2], orient);
+		if(op.has("blocks")) {
+			JsonArray blocks = op.getAsJsonArray("blocks");
+			for(JsonElement blockEl : blocks) {
+				JsonObject block = blockEl.getAsJsonObject();
+				int[] pos = getCoordArray(block, "pos");
+				short type = block.has("type") ? block.get("type").getAsShort() : 0;
+				byte orient = block.has("orientation") ? block.get("orientation").getAsByte() : 0;
+				if(inBounds(pos[0], pos[1], pos[2], dims)) {
+					template.setTypeAt(pos[0], pos[1], pos[2], type);
+					template.setOrientationAt(pos[0], pos[1], pos[2], orient);
+				}
 			}
+		} else if(op.has("from") && op.has("to")) {
+			applyFill(template, op, dims);
 		}
 	}
 
