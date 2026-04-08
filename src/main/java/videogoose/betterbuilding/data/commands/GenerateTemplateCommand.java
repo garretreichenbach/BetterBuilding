@@ -63,22 +63,28 @@ public class GenerateTemplateCommand implements CommandInterface {
 				return true;
 			}
 
-			String description = args[0].replaceAll("^\"|\"$", "").trim();
-
-			List<TemplateMetaData> references = new ArrayList<>();
+			final String description = args[0].replaceAll("^\"|\"$", "").trim();
+			final List<TemplateMetaData> references = new ArrayList<>();
 			if(args.length > 1) {
-				List<String> templateNames = parseNames(args[1]);
-				references = getTemplates(templateNames);
+				references.addAll(getTemplates(parseNames(args[1])));
 			}
+			final int[] outputDims = {size.x, size.y, size.z};
 
 			PlayerUtils.sendMessage(sender, "Generating template via AI... This may take a moment.");
-			int[] outputDims = {size.x, size.y, size.z};
-			TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description);
-			PlayerUtils.sendMessage(sender, "Template generated: " + generated.getName());
 
-			CopyArea copyArea = generated.toRawTemplate();
-			copyArea.save(generated.getName());
-			getBuildToolsManager().loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
+			new Thread(() -> {
+				try {
+					TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description);
+					CopyArea copyArea = generated.toRawTemplate();
+					copyArea.save(generated.getName());
+					getBuildToolsManager().loadCopyArea(new File("./templates", generated.getName() + ".smtpl"));
+					PlayerUtils.sendMessage(sender, "Template generated: " + generated.getName());
+				} catch(Exception exception) {
+					PlayerUtils.sendMessage(sender, "Template generation failed: " + exception.getMessage());
+					BetterBuilding.getInstance().logException("Template generation failed", exception);
+				}
+			}, "BetterBuilding-Generate").start();
+
 		} catch(Exception exception) {
 			PlayerUtils.sendMessage(sender, "Template generation failed: " + exception.getMessage());
 			BetterBuilding.getInstance().logException("Template generation failed", exception);
