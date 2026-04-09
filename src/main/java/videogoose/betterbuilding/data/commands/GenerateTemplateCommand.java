@@ -77,16 +77,27 @@ public class GenerateTemplateCommand implements CommandInterface {
 
 			String description = args[0].replaceAll("^\"|\"$", "").trim();
 			List<TemplateMetaData> references = new ArrayList<>();
-			if(args.length > 1) {
-				references.addAll(getTemplates(parseNames(args[1])));
+			boolean useHotbar = false;
+			for(int i = 1; i < args.length; i++) {
+				if("-hotbar".equalsIgnoreCase(args[i])) {
+					useHotbar = true;
+				} else {
+					references.addAll(getTemplates(parseNames(args[i])));
+				}
 			}
 			int[] outputDims = {size.x, size.y, size.z};
+
+			final Set<Short> hotbarTypes = useHotbar ? getHotbarBlockTypes(sender) : null;
+			if(useHotbar && (hotbarTypes == null || hotbarTypes.isEmpty())) {
+				PlayerUtils.sendMessage(sender, "No blocks found in hotbar.");
+				return true;
+			}
 
 			PlayerUtils.sendMessage(sender, "Generating template via AI... This may take a moment.");
 
 			new Thread(() -> {
 				try {
-					TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description);
+					TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description, hotbarTypes);
 					CopyArea copyArea = generated.toRawTemplate();
 					copyArea.save(generated.getName());
 					BuildToolsManager btm = getBuildToolsManager();
