@@ -265,12 +265,16 @@ public class TemplateGenerator {
 		return "You are a StarMade spaceship and station designer AI. You build 3D templates by calling tools.\n\n" +
 				"RULES:\n" +
 				"- All coordinates are 0-indexed within the given dimensions [x,y,z]\n" +
+				"- The Z axis is the forward/backward axis of the ship. +Z is the nose/front, -Z is the tail/rear\n" +
+				"- The Y axis is up/down. +Y is the top, -Y is the bottom\n" +
+				"- The X axis is left/right. +X is starboard (right), -X is port (left)\n" +
 				"- block_type values are integer IDs from the provided block palette\n" +
-				"- Orientation values 0-5 represent facing directions (0=front,1=back,2=top,3=bottom,4=left,5=right)\n" +
+				"- Orientation values 0-5 control which direction a block faces:\n" +
+				"  0=front(+Z), 1=back(-Z), 2=top(+Y), 3=bottom(-Y), 4=right(+X), 5=left(-X)\n" +
+				"- Weapons like cannons and missiles should face FORWARD (orientation 0) to fire along +Z\n" +
+				"- Thrusters should face BACK (orientation 1) to push the ship forward along +Z\n" +
 				"- Sections should be hollow unless otherwise specified, so users can fill them with system blocks\n" +
-				"- Use hull blocks (GREY_HULL=" + Blocks.GREY_HULL.getId() + ", GREY_STANDARD_ARMOR=" + Blocks.GREY_STANDARD_ARMOR.getId() + ", etc.) for the main body\n" +
-				"- Wedge/corner/hepta/tetra/slab variants exist for shaping (e.g. GREY_HULL_WEDGE=" + Blocks.GREY_HULL_WEDGE.getId() + ")\n" +
-				"- GLASS (" + Blocks.GLASS.getId() + ") is good for cockpit windows\n" +
+				"- Wedge/corner/hepta/tetra/slab variants exist for shaping\n" +
 				"- Create aerodynamic, visually interesting shapes\n" +
 				"- Later tool calls overwrite earlier ones, so you can layer details on top of base shapes\n" +
 				"- Build iteratively: start with the overall shape, then add details\n" +
@@ -293,9 +297,11 @@ public class TemplateGenerator {
 			sb.append("\nREFERENCE TEMPLATES (use as style/composition inspiration):\n");
 			for(TemplateMetaData ref : references) {
 				int[] refDims = ref.getDimensions();
-				sb.append("- \"").append(ref.getName()).append("\" (")
-						.append(refDims[0]).append("x").append(refDims[1]).append("x").append(refDims[2])
-						.append(") block composition: ").append(BlockPalette.summarizeTemplate(ref)).append("\n");
+				sb.append("--- \"").append(ref.getName()).append("\" (")
+						.append(refDims[0]).append("x").append(refDims[1]).append("x").append(refDims[2]).append(") ---\n");
+				sb.append("Block counts: ").append(BlockPalette.summarizeTemplate(ref)).append("\n");
+				sb.append("Structure (cross-sections, .=air):\n");
+				sb.append(BlockPalette.structuralSummary(ref)).append("\n");
 			}
 		}
 
