@@ -2,6 +2,8 @@ package videogoose.betterbuilding.data.template;
 
 
 import api.utils.element.Blocks;
+import org.schema.game.common.data.element.ElementInformation;
+import org.schema.game.common.data.element.ElementKeyMap;
 
 import java.util.*;
 
