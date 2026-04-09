@@ -25,6 +25,7 @@ public class BlockPalette {
 		boolean first = true;
 		for(Blocks block : Blocks.values()) {
 			if(block == Blocks.EMPTY_SPACE) continue;
+			if(!block.getInfo().isShoppable() || !block.getInfo().isInRecipe() || block.getInfo().isDeprecated()) continue;
 			if(!isRelevant(block.name())) continue;
 			if(!first) sb.append(",");
 			sb.append("\"").append(block.name()).append("\":").append(block.getId());
