@@ -8,6 +8,8 @@ import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildToolsManager;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
 import org.schema.game.client.controller.manager.ingame.CopyPasteMode;
+import org.schema.game.common.data.element.ElementKeyMap;
+import org.schema.game.common.data.player.inventory.Inventory;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIGroup;
 import org.schema.game.client.view.gui.advancedbuildmode.AdvancedBuildMode;
