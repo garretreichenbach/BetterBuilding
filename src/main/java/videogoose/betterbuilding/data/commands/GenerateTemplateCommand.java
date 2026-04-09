@@ -152,6 +152,20 @@ public class GenerateTemplateCommand implements CommandInterface {
 		return BetterBuilding.getInstance();
 	}
 
+	private static Set<Short> getHotbarBlockTypes(PlayerState sender) {
+		Set<Short> types = new LinkedHashSet<>();
+		Inventory inventory = GameClient.getClientState().getPlayer().getInventory();
+		for(int i = 0; i < inventory.getActiveSlotsMax(); i++) {
+			if(!inventory.isSlotEmpty(i)) {
+				short type = inventory.getType(i);
+				if(ElementKeyMap.isValidType(type)) {
+					types.add(type);
+				}
+			}
+		}
+		return types;
+	}
+
 	private static BuildToolsManager getBuildToolsManager() {
 		return GameClient.getClientState().getGlobalGameControlManager().getIngameControlManager().getPlayerGameControlManager().getPlayerIntercationManager().getBuildToolsManager();
 	}
