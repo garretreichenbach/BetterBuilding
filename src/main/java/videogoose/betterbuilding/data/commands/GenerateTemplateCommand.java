@@ -121,14 +121,61 @@ public class GenerateTemplateCommand implements CommandInterface {
 	private List<TemplateMetaData> getTemplates(List<String> templateNames) throws Exception {
 		List<TemplateMetaData> templates = new ArrayList<>();
 		for(String templateName : templateNames) {
-			File templateFile = new File("./templates", templateName + ".smtpl");
-			if(templateFile.exists()) {
-				CopyArea area = new CopyArea();
-				area.load(templateFile);
-				templates.add(TemplateMetaData.fromRawTemplate(templateName, area));
+			if(templateName.contains("*") || templateName.contains("?")) {
+				// Wildcard pattern - match against all template files
+				for(String match : resolveWildcard(templateName)) {
+					File templateFile = new File("./templates", match + ".smtpl");
+					if(templateFile.exists()) {
+						CopyArea area = new CopyArea();
+						area.load(templateFile);
+						templates.add(TemplateMetaData.fromRawTemplate(match, area));
+					}
+				}
+			} else {
+				File templateFile = new File("./templates", templateName + ".smtpl");
+				if(templateFile.exists()) {
+					CopyArea area = new CopyArea();
+					area.load(templateFile);
+					templates.add(TemplateMetaData.fromRawTemplate(templateName, area));
+				}
 			}
 		}
 		return templates;
+	}
+
+	/**
+	 * Resolve a wildcard pattern (using * and ?) against .smtpl files in the templates directory.
+	 * Converts glob-style wildcards to regex: * matches any sequence, ? matches one character.
+	 */
+	private List<String> resolveWildcard(String pattern) {
+		List<String> matches = new ArrayList<>();
+		File templateDir = new File("./templates");
+		if(!templateDir.isDirectory()) return matches;
+
+		// Convert glob to regex: escape regex chars, then replace * and ?
+		String regex = pattern
+				.replace("\\", "\\\\")
+				.replace(".", "\\.")
+				.replace("(", "\\(").replace(")", "\\)")
+				.replace("[", "\\[").replace("]", "\\]")
+				.replace("{", "\\{").replace("}", "\\}")
+				.replace("+", "\\+").replace("^", "\\^").replace("$", "\\$")
+				.replace("|", "\\|")
+				.replace("*", ".*")
+				.replace("?", ".");
+		regex = "(?i)^" + regex + "$"; // case-insensitive, full match
+
+		File[] files = templateDir.listFiles((dir, name) -> name.endsWith(".smtpl"));
+		if(files == null) return matches;
+
+		for(File file : files) {
+			String name = file.getName().replace(".smtpl", "");
+			if(name.matches(regex)) {
+				matches.add(name);
+			}
+		}
+		Collections.sort(matches);
+		return matches;
 	}
 
 	private List<String> parseNames(String arg) {
