@@ -11,6 +11,7 @@ import videogoose.betterbuilding.manager.ConfigManager;
 import videogoose.betterbuilding.manager.LMStudioClient;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Generates building templates via an agentic tool-calling loop.
@@ -23,7 +24,7 @@ public class TemplateGenerator {
 	public static final int DEFAULT_MAX_DIM = 64;
 	private static final int MAX_ITERATIONS = 128;
 
-	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description) throws Exception {
+	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description, Set<Short> hotbarTypes) throws Exception {
 		validateDimensions(outputDims);
 
 		boolean useOllama = "ollama".equals(ConfigManager.getProvider());
@@ -38,11 +39,15 @@ public class TemplateGenerator {
 				ConfigManager.getLMStudioTimeout()
 		);
 
+		String palette = (hotbarTypes != null && !hotbarTypes.isEmpty())
+				? BlockPalette.toHotbarPaletteString(hotbarTypes)
+				: BlockPalette.toJsonPaletteString();
+
 		TemplateMetaData template = new TemplateMetaData("ai_generated", outputDims);
 		JsonArray tools = buildTools();
 		JsonArray messages = new JsonArray();
 		messages.add(makeMessage("system", buildSystemPrompt()));
-		messages.add(makeMessage("user", buildUserPrompt(references, outputDims, description)));
+		messages.add(makeMessage("user", buildUserPrompt(references, outputDims, description, palette)));
 
 		BetterBuilding.getInstance().logInfo("Starting template generation loop via " + providerName + "...");
 
@@ -281,7 +286,7 @@ public class TemplateGenerator {
 				"- Call 'finish' when you are done building";
 	}
 
-	private static String buildUserPrompt(List<TemplateMetaData> references, int[] dims, String description) {
+	private static String buildUserPrompt(List<TemplateMetaData> references, int[] dims, String description, String palette) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Build a StarMade template with these specifications:\n\n");
 		sb.append("DIMENSIONS: ").append(dims[0]).append("x").append(dims[1]).append("x").append(dims[2]).append(" (X,Y,Z)\n");
@@ -290,8 +295,8 @@ public class TemplateGenerator {
 			sb.append("DESCRIPTION: ").append(description).append("\n");
 		}
 
-		sb.append("\nAVAILABLE BLOCK PALETTE:\n");
-		sb.append(BlockPalette.toJsonPaletteString()).append("\n");
+		sb.append("\nAVAILABLE BLOCK PALETTE (ONLY use block_type IDs from this list):\n");
+		sb.append(palette).append("\n");
 
 		if(references != null && !references.isEmpty()) {
 			sb.append("\nREFERENCE TEMPLATES (use as style/composition inspiration):\n");
