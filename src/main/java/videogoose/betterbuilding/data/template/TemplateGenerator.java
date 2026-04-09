@@ -27,17 +27,45 @@ public class TemplateGenerator {
 	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description, Set<Short> hotbarTypes) throws Exception {
 		validateDimensions(outputDims);
 
-		boolean useOllama = "ollama".equals(ConfigManager.getProvider());
-		String url = useOllama ? ConfigManager.getOllamaUrl() : ConfigManager.getLMStudioUrl();
-		String model = useOllama ? ConfigManager.getOllamaModel() : ConfigManager.getLMStudioModel();
-		String providerName = useOllama ? "Ollama" : "LM Studio";
+		String provider = ConfigManager.getProvider();
+		String url, model, providerName, apiKey;
+		float temperature;
+		int maxTokens, timeout;
 
-		LMStudioClient client = new LMStudioClient(
-				url, model,
-				ConfigManager.getLMStudioTemperature(),
-				ConfigManager.getLMStudioMaxTokens(),
-				ConfigManager.getLMStudioTimeout()
-		);
+		switch(provider) {
+			case "ollama":
+				url = ConfigManager.getOllamaUrl();
+				model = ConfigManager.getOllamaModel();
+				providerName = "Ollama";
+				apiKey = null;
+				temperature = ConfigManager.getLMStudioTemperature();
+				maxTokens = ConfigManager.getLMStudioMaxTokens();
+				timeout = ConfigManager.getLMStudioTimeout();
+				break;
+			case "api":
+				url = ConfigManager.getApiUrl();
+				model = ConfigManager.getApiModel();
+				providerName = "API (" + url + ")";
+				apiKey = ConfigManager.getApiKey();
+				temperature = ConfigManager.getApiTemperature();
+				maxTokens = ConfigManager.getApiMaxTokens();
+				timeout = ConfigManager.getApiTimeout();
+				if(apiKey == null || apiKey.isEmpty()) {
+					throw new Exception("API key is required for the 'api' provider. Set 'api-key' in config.yml.");
+				}
+				break;
+			default: // lmstudio
+				url = ConfigManager.getLMStudioUrl();
+				model = ConfigManager.getLMStudioModel();
+				providerName = "LM Studio";
+				apiKey = null;
+				temperature = ConfigManager.getLMStudioTemperature();
+				maxTokens = ConfigManager.getLMStudioMaxTokens();
+				timeout = ConfigManager.getLMStudioTimeout();
+				break;
+		}
+
+		LMStudioClient client = new LMStudioClient(url, model, temperature, maxTokens, timeout, apiKey);
 
 		String palette = (hotbarTypes != null && !hotbarTypes.isEmpty())
 				? BlockPalette.toHotbarPaletteString(hotbarTypes)

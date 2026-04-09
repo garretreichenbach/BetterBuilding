@@ -21,13 +21,19 @@ public class LMStudioClient {
 	private final float temperature;
 	private final int maxTokens;
 	private final int timeoutMs;
+	private final String apiKey;
 
 	public LMStudioClient(String baseUrl, String model, float temperature, int maxTokens, int timeoutMs) {
+		this(baseUrl, model, temperature, maxTokens, timeoutMs, null);
+	}
+
+	public LMStudioClient(String baseUrl, String model, float temperature, int maxTokens, int timeoutMs, String apiKey) {
 		this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
 		this.model = model;
 		this.temperature = temperature;
 		this.maxTokens = maxTokens;
 		this.timeoutMs = timeoutMs;
+		this.apiKey = (apiKey != null && !apiKey.isEmpty()) ? apiKey : null;
 	}
 
 	/**
@@ -76,7 +82,7 @@ public class LMStudioClient {
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setRequestProperty("Authorization", "Bearer lm-studio");
+			conn.setRequestProperty("Authorization", "Bearer " + (apiKey != null ? apiKey : "lm-studio"));
 			conn.setDoOutput(true);
 			conn.setConnectTimeout(timeoutMs);
 			conn.setReadTimeout(timeoutMs);

@@ -37,11 +37,19 @@ public class TrainingDataExporter {
 			}
 		}
 
+		BetterBuilding.getInstance().logInfo("Resolved " + resolved.size() + " template(s) to export");
+
 		if(resolved.isEmpty()) {
-			throw new Exception("No matching .smtpl files found in " + templateDir.getAbsolutePath());
+			// List what's actually in the directory for debugging
+			File[] allFiles = templateDir.listFiles((dir, name) -> name.endsWith(".smtpl"));
+			int total = allFiles != null ? allFiles.length : 0;
+			throw new Exception("No matching .smtpl files found in " + templateDir.getAbsolutePath() +
+					" (directory contains " + total + " .smtpl files)");
 		}
 
 		int count = 0;
+		int skippedSmall = 0;
+		int failed = 0;
 		try(FileWriter writer = new FileWriter(outputFile)) {
 			for(String name : resolved) {
 				try {
@@ -51,21 +59,94 @@ public class TrainingDataExporter {
 					area.load(file);
 					TemplateMetaData template = TemplateMetaData.fromRawTemplate(name, area);
 
-					// Skip tiny or empty templates
 					int blockCount = countNonAir(template);
-					if(blockCount < 4) continue;
+					if(blockCount < 4) {
+						BetterBuilding.getInstance().logInfo("Skipping " + name + " (only " + blockCount + " blocks)");
+						skippedSmall++;
+						continue;
+					}
 
 					String jsonLine = buildTrainingExample(template);
 					writer.write(jsonLine);
 					writer.write("\n");
 					count++;
-					BetterBuilding.getInstance().logInfo("Exported training data for: " + name +
-							" (" + blockCount + " blocks -> " + "decomposed)");
+					BetterBuilding.getInstance().logInfo("Exported: " + name + " (" + blockCount + " blocks)");
 				} catch(Exception e) {
+					failed++;
 					BetterBuilding.getInstance().logWarning("Failed to export " + name + ": " + e.getMessage());
 				}
 			}
 		}
+
+		BetterBuilding.getInstance().logInfo("Export complete: " + count + " exported, " +
+				skippedSmall + " skipped (too small), " + failed + " failed");
+		return count;
+	}
+
+	/**
+	 * Export blueprints matching the given patterns to a JSONL training file.
+	 * Reads full StarMade blueprint directories and decomposes them into tool-call sequences.
+	 */
+	public static int exportBlueprints(File blueprintDir, File outputFile, List<String> patterns) throws Exception {
+		Set<String> resolved = new LinkedHashSet<>();
+		for(String pattern : patterns) {
+			resolved.addAll(BlueprintReader.resolveWildcard(blueprintDir, pattern));
+		}
+
+		BetterBuilding.getInstance().logInfo("Resolved " + resolved.size() + " blueprint(s) to export");
+
+		if(resolved.isEmpty()) {
+			List<String> all = BlueprintReader.listBlueprints(blueprintDir);
+			throw new Exception("No matching blueprints found (directory contains " + all.size() + " blueprints)");
+		}
+
+		int count = 0;
+		int skippedSmall = 0;
+		int skippedLarge = 0;
+		int failed = 0;
+		try(FileWriter writer = new FileWriter(outputFile)) {
+			for(String name : resolved) {
+				try {
+					BetterBuilding.getInstance().logInfo("Reading blueprint: " + name + " ...");
+					TemplateMetaData template = BlueprintReader.readBlueprint(blueprintDir, name);
+
+					if(template == null) {
+						BetterBuilding.getInstance().logInfo("Skipping " + name + " (empty)");
+						skippedSmall++;
+						continue;
+					}
+
+					int blockCount = countNonAir(template);
+					if(blockCount < 4) {
+						BetterBuilding.getInstance().logInfo("Skipping " + name + " (only " + blockCount + " blocks)");
+						skippedSmall++;
+						continue;
+					}
+
+					int[] dims = template.getDimensions();
+					// Skip extremely large blueprints that would create unmanageably long training sequences
+					if(dims[0] > 256 || dims[1] > 256 || dims[2] > 256) {
+						BetterBuilding.getInstance().logInfo("Skipping " + name + " (too large: " +
+								dims[0] + "x" + dims[1] + "x" + dims[2] + ")");
+						skippedLarge++;
+						continue;
+					}
+
+					String jsonLine = buildTrainingExample(template);
+					writer.write(jsonLine);
+					writer.write("\n");
+					count++;
+					BetterBuilding.getInstance().logInfo("Exported: " + name + " (" + blockCount + " blocks, " +
+							dims[0] + "x" + dims[1] + "x" + dims[2] + ")");
+				} catch(Exception e) {
+					failed++;
+					BetterBuilding.getInstance().logWarning("Failed to export blueprint " + name + ": " + e.getMessage());
+				}
+			}
+		}
+
+		BetterBuilding.getInstance().logInfo("Blueprint export complete: " + count + " exported, " +
+				skippedSmall + " skipped (too small/empty), " + skippedLarge + " skipped (too large), " + failed + " failed");
 		return count;
 	}
 

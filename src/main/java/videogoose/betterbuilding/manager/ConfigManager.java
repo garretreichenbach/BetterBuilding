@@ -17,7 +17,13 @@ public class ConfigManager {
 			"lmstudio-timeout-ms: 1200000",
 			"ollama-host: localhost",
 			"ollama-port: 11434",
-			"ollama-model: gemma4"
+			"ollama-model: gemma4",
+			"api-url: https://api.openai.com",
+			"api-key: none",
+			"api-model: gpt-4o",
+			"api-temperature: 0.7",
+			"api-max-tokens: 64000",
+			"api-timeout-ms: 300000"
 	};
 
 	public static void initialize(BetterBuilding instance) {
@@ -71,6 +77,43 @@ public class ConfigManager {
 
 	public static String getOllamaModel() {
 		return mainConfig.getConfigurableValue("ollama-model", "gemma4");
+	}
+
+	public static String getApiUrl() {
+		return mainConfig.getConfigurableValue("api-url", "https://api.openai.com").trim();
+	}
+
+	public static String getApiKey() {
+		String key = mainConfig.getConfigurableValue("api-key", "none").trim();
+		return "none".equalsIgnoreCase(key) ? "" : key;
+	}
+
+	public static String getApiModel() {
+		return mainConfig.getConfigurableValue("api-model", "gpt-4o");
+	}
+
+	public static float getApiTemperature() {
+		try {
+			return Float.parseFloat(mainConfig.getConfigurableValue("api-temperature", "0.7"));
+		} catch(NumberFormatException e) {
+			return 0.7f;
+		}
+	}
+
+	public static int getApiMaxTokens() {
+		try {
+			return Integer.parseInt(mainConfig.getConfigurableValue("api-max-tokens", "64000"));
+		} catch(NumberFormatException e) {
+			return 64000;
+		}
+	}
+
+	public static int getApiTimeout() {
+		try {
+			return Integer.parseInt(mainConfig.getConfigurableValue("api-timeout-ms", "300000"));
+		} catch(NumberFormatException e) {
+			return 300000;
+		}
 	}
 
 	private static int getLMStudioPort() {
