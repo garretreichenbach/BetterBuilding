@@ -37,6 +37,36 @@ public class BlockPalette {
 		return sb.toString();
 	}
 
+	/**
+	 * Build a palette from the player's hotbar block types, expanding each
+	 * to include its sub-shapes (wedge, corner, tetra, hepta, slabs).
+	 */
+	public static String toHotbarPaletteString(Set<Short> hotbarTypes) {
+		Set<Short> expanded = new LinkedHashSet<>();
+		for(short type : hotbarTypes) {
+			if(!ElementKeyMap.isValidType(type)) continue;
+			expanded.add(type);
+			ElementInformation info = ElementKeyMap.getInfo(type);
+			if(info.styleIds != null) {
+				for(short id : info.styleIds) expanded.add(id);
+			}
+			if(info.slabIds != null) {
+				for(short id : info.slabIds) expanded.add(id);
+			}
+		}
+
+		StringBuilder sb = new StringBuilder("{");
+		boolean first = true;
+		for(short type : expanded) {
+			if(!ElementKeyMap.isValidType(type)) continue;
+			if(!first) sb.append(",");
+			sb.append("\"").append(getName(type)).append("\":").append(type);
+			first = false;
+		}
+		sb.append("}");
+		return sb.toString();
+	}
+
 	private static boolean isRelevant(String name) {
 		for(String category : PALETTE_CATEGORIES) {
 			if(name.contains(category)) return true;
