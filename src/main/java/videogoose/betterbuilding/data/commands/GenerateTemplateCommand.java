@@ -147,7 +147,7 @@ public class GenerateTemplateCommand implements CommandInterface {
 	 * Resolve a wildcard pattern (using * and ?) against .smtpl files in the templates directory.
 	 * Converts glob-style wildcards to regex: * matches any sequence, ? matches one character.
 	 */
-	private List<String> resolveWildcard(String pattern) {
+	public static List<String> resolveWildcard(String pattern) {
 		List<String> matches = new ArrayList<>();
 		File templateDir = new File("./templates");
 		if(!templateDir.isDirectory()) return matches;
