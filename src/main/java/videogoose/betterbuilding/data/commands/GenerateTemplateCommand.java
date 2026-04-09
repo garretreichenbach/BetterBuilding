@@ -22,9 +22,7 @@ import videogoose.betterbuilding.data.template.TemplateMetaData;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * Chat command that generates a building template using AI via LM Studio.
