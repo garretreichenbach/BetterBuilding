@@ -4,6 +4,7 @@ import api.mod.StarLoader;
 import api.mod.StarMod;
 import videogoose.betterbuilding.data.commands.ExportTrainingDataCommand;
 import videogoose.betterbuilding.data.commands.GenerateTemplateCommand;
+import videogoose.betterbuilding.data.commands.GenerateWfcCommand;
 import videogoose.betterbuilding.manager.ConfigManager;
 
 /**
@@ -33,6 +34,7 @@ public class BetterBuilding extends StarMod {
 	private void registerCommands() {
 		StarLoader.registerCommand(new GenerateTemplateCommand());
 		StarLoader.registerCommand(new ExportTrainingDataCommand());
+		StarLoader.registerCommand(new GenerateWfcCommand());
 	}
 
 	@Override

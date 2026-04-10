@@ -39,20 +39,51 @@ public class TemplateMetaData {
 	public static TemplateMetaData fromRawTemplate(String name, CopyArea area) {
 		TemplateMetaData templateMetaData = new TemplateMetaData();
 		templateMetaData.name = name;
-		int sizeX = area.max.x - area.min.x + 1;
-		int sizeY = area.max.y - area.min.y + 1;
-		int sizeZ = area.max.z - area.min.z + 1;
+
+		ObjectArrayList<VoidSegmentPiece> pieces = area.getPieces();
+
+		// area.min/area.max are not always populated when CopyArea is loaded from
+		// disk via load() — older / saved templates leave them as (0,0,0), which
+		// makes the dimensions collapse to 1x1x1 and silently drops every piece
+		// whose voidPos isn't the origin. Compute the bounding box from the pieces
+		// themselves and prefer the larger of (file-stored bounds, piece bounds).
+		int minX = area.min.x, minY = area.min.y, minZ = area.min.z;
+		int maxX = area.max.x, maxY = area.max.y, maxZ = area.max.z;
+		boolean storedBoundsValid = (maxX >= minX && maxY >= minY && maxZ >= minZ);
+		if(!pieces.isEmpty()) {
+			int pMinX = Integer.MAX_VALUE, pMinY = Integer.MAX_VALUE, pMinZ = Integer.MAX_VALUE;
+			int pMaxX = Integer.MIN_VALUE, pMaxY = Integer.MIN_VALUE, pMaxZ = Integer.MIN_VALUE;
+			for(int i = 0; i < pieces.size(); i++) {
+				VoidSegmentPiece piece = pieces.get(i);
+				if(piece.voidPos.x < pMinX) pMinX = piece.voidPos.x;
+				if(piece.voidPos.y < pMinY) pMinY = piece.voidPos.y;
+				if(piece.voidPos.z < pMinZ) pMinZ = piece.voidPos.z;
+				if(piece.voidPos.x > pMaxX) pMaxX = piece.voidPos.x;
+				if(piece.voidPos.y > pMaxY) pMaxY = piece.voidPos.y;
+				if(piece.voidPos.z > pMaxZ) pMaxZ = piece.voidPos.z;
+			}
+			// If stored bounds wouldn't contain all pieces, use the piece bounds.
+			if(!storedBoundsValid
+					|| pMinX < minX || pMinY < minY || pMinZ < minZ
+					|| pMaxX > maxX || pMaxY > maxY || pMaxZ > maxZ) {
+				minX = pMinX; minY = pMinY; minZ = pMinZ;
+				maxX = pMaxX; maxY = pMaxY; maxZ = pMaxZ;
+			}
+		}
+
+		int sizeX = maxX - minX + 1;
+		int sizeY = maxY - minY + 1;
+		int sizeZ = maxZ - minZ + 1;
 		templateMetaData.dimensions = new int[] {sizeX, sizeY, sizeZ};
 		int totalSize = sizeX * sizeY * sizeZ;
 		templateMetaData.blockTypes = new short[totalSize];
 		templateMetaData.blockOrientations = new byte[totalSize];
 		// Pieces are sparse — only non-empty blocks are stored, each with its own voidPos
-		ObjectArrayList<VoidSegmentPiece> pieces = area.getPieces();
 		for(int i = 0; i < pieces.size(); i++) {
 			VoidSegmentPiece piece = pieces.get(i);
-			int rx = piece.voidPos.x - area.min.x;
-			int ry = piece.voidPos.y - area.min.y;
-			int rz = piece.voidPos.z - area.min.z;
+			int rx = piece.voidPos.x - minX;
+			int ry = piece.voidPos.y - minY;
+			int rz = piece.voidPos.z - minZ;
 			if(rx < 0 || rx >= sizeX || ry < 0 || ry >= sizeY || rz < 0 || rz >= sizeZ) continue;
 			int index = rx + ry * sizeX + rz * sizeX * sizeY;
 			templateMetaData.blockTypes[index] = piece.getType();

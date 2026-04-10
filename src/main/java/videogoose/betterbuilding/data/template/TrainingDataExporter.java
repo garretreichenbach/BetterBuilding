@@ -32,6 +32,31 @@ public class TrainingDataExporter {
 	private static final int MIN_FILL_VOLUME = 4; // Don't bother with fill for tiny regions
 
 	/**
+	 * Maximum tool calls per exported conversation. Templates whose decomposition
+	 * exceeds this are skipped — they would produce JSONL rows longer than any
+	 * reasonable training context window and dominate the dataset with pathological
+	 * "place every block" sequences that small models can't learn from anyway.
+	 *
+	 * Rough budget on an 8 GB card with max_seq_length ~4096:
+	 *   system prompt (tool docs + palette)    ~2500 tokens
+	 *   user message                           ~200 tokens
+	 *   each tool call + tool response         ~35-50 tokens
+	 *   → ~30-40 ops fit comfortably, cap at 150 for headroom on bigger cards.
+	 *
+	 * Override via the system property -Dbb.training.maxOps=N when exporting.
+	 */
+	private static final int MAX_OPS_PER_TEMPLATE =
+			Integer.getInteger("bb.training.maxOps", 150);
+
+	/**
+	 * Minimum block count for a template to be worth exporting. Even a single-
+	 * block template is a valid training example ("user asks for X → place →
+	 * finish"), so this defaults to 1. Override via -Dbb.training.minBlocks=N.
+	 */
+	private static final int MIN_BLOCKS_PER_TEMPLATE =
+			Integer.getInteger("bb.training.minBlocks", 1);
+
+	/**
 	 * Export .smtpl files matching the given template names to a JSONL training file.
 	 * Names can include wildcard patterns (* and ?).
 	 * Returns the number of templates exported.
@@ -60,6 +85,7 @@ public class TrainingDataExporter {
 
 		int count = 0;
 		int skippedSmall = 0;
+		int skippedComplex = 0;
 		int failed = 0;
 		try(FileWriter writer = new FileWriter(outputFile)) {
 			for(String name : resolved) {
@@ -71,9 +97,29 @@ public class TrainingDataExporter {
 					TemplateMetaData template = TemplateMetaData.fromRawTemplate(name, area);
 
 					int blockCount = countNonAir(template);
-					if(blockCount < 4) {
-						BetterBuilding.getInstance().logInfo("Skipping " + name + " (only " + blockCount + " blocks)");
+					if(blockCount < MIN_BLOCKS_PER_TEMPLATE) {
+						// Diagnostic: dump everything we know about this "empty" template so
+						// we can see whether area.load() actually returned any pieces, and
+						// whether they made it through fromRawTemplate's bounds check.
+						int rawPieces = area.getPieces() != null ? area.getPieces().size() : -1;
+						int[] dims = template.getDimensions();
+						BetterBuilding.getInstance().logInfo("Skipping " + name +
+								" (blockCount=" + blockCount +
+								", rawPieces=" + rawPieces +
+								", area.min=(" + area.min.x + "," + area.min.y + "," + area.min.z + ")" +
+								", area.max=(" + area.max.x + "," + area.max.y + "," + area.max.z + ")" +
+								", dims=" + dims[0] + "x" + dims[1] + "x" + dims[2] + ")");
 						skippedSmall++;
+						continue;
+					}
+
+					// Dry-run the decomposition so we can reject overly complex templates
+					// before writing a giant JSONL row that won't fit a training context.
+					int opCount = decompose(template).size() + 1; // +1 for the finish call
+					if(opCount > MAX_OPS_PER_TEMPLATE) {
+						BetterBuilding.getInstance().logInfo("Skipping " + name + " (" + opCount +
+								" ops > cap of " + MAX_OPS_PER_TEMPLATE + ")");
+						skippedComplex++;
 						continue;
 					}
 
@@ -81,7 +127,8 @@ public class TrainingDataExporter {
 					writer.write(jsonLine);
 					writer.write("\n");
 					count++;
-					BetterBuilding.getInstance().logInfo("Exported: " + name + " (" + blockCount + " blocks)");
+					BetterBuilding.getInstance().logInfo("Exported: " + name + " (" + blockCount +
+							" blocks, " + opCount + " ops)");
 				} catch(Exception e) {
 					failed++;
 					BetterBuilding.getInstance().logWarning("Failed to export " + name + ": " + e.getMessage());
@@ -90,7 +137,9 @@ public class TrainingDataExporter {
 		}
 
 		BetterBuilding.getInstance().logInfo("Export complete: " + count + " exported, " +
-				skippedSmall + " skipped (too small), " + failed + " failed");
+				skippedSmall + " skipped (too small), " +
+				skippedComplex + " skipped (too complex), " +
+				failed + " failed");
 		return count;
 	}
 
@@ -143,12 +192,22 @@ public class TrainingDataExporter {
 						continue;
 					}
 
+					// Dry-run the decomposition so we can reject overly complex blueprints
+					// before writing a giant JSONL row that won't fit a training context.
+					int opCount = decompose(template).size() + 1; // +1 for the finish call
+					if(opCount > MAX_OPS_PER_TEMPLATE) {
+						BetterBuilding.getInstance().logInfo("Skipping " + name + " (" + opCount +
+								" ops > cap of " + MAX_OPS_PER_TEMPLATE + ")");
+						skippedLarge++;
+						continue;
+					}
+
 					String jsonLine = buildTrainingExample(template);
 					writer.write(jsonLine);
 					writer.write("\n");
 					count++;
 					BetterBuilding.getInstance().logInfo("Exported: " + name + " (" + blockCount + " blocks, " +
-							dims[0] + "x" + dims[1] + "x" + dims[2] + ")");
+							opCount + " ops, " + dims[0] + "x" + dims[1] + "x" + dims[2] + ")");
 				} catch(Exception e) {
 					failed++;
 					BetterBuilding.getInstance().logWarning("Failed to export blueprint " + name + ": " + e.getMessage());
