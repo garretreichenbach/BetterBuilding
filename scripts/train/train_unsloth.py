@@ -50,13 +50,12 @@ from prepare_dataset import load_dataset_from_jsonl, split_train_eval  # noqa: E
 # Defaults
 # ---------------------------------------------------------------------------
 
-# Gemma 4 E4B was released after this script was written, so the exact
-# Unsloth/HuggingFace repo name may differ. The guess below follows Unsloth's
-# usual naming convention. If `from_pretrained` 404s, override on the command
-# line with --base-model and check huggingface.co/unsloth for the real id, or
-# use the upstream `google/...` repo without the bnb-4bit suffix and pass
-# --no-4bit (slower / more VRAM).
-DEFAULT_BASE_MODEL = "unsloth/gemma-4-e4b-it-bnb-4bit"
+# Unsloth ships a dynamic 4-bit bitsandbytes build of Gemma 4 E4B specifically
+# for fine-tuning. Do NOT use the `-GGUF` repo here — that's a llama.cpp
+# inference artifact and isn't loadable by `FastLanguageModel.from_pretrained`.
+# If you want to train in full precision instead, pass
+# `--base-model unsloth/gemma-4-E4B-it --no-4bit` (much more VRAM).
+DEFAULT_BASE_MODEL = "unsloth/gemma-4-E2B-it-unsloth-bnb-4bit"
 
 # Gemma's chat template uses <start_of_turn>user / <start_of_turn>model markers.
 # These are what `train_on_responses_only` keys off of to mask user/system

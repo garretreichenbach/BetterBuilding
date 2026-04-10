@@ -5,8 +5,9 @@ These scripts fine-tune a small chat model on the JSONL produced by
 into Ollama (which BetterBuilding talks to via the existing
 `LMStudioClient` — Ollama exposes the same `/v1/chat/completions` endpoint).
 
-The default target is **Gemma 4 E4B** in 4-bit, sized to fit on a 12 GB
-RTX 3060.
+The default target is **Gemma 4 E2B** in 4-bit, sized to fit on an 8 GB
+RTX 3060. Bump to `unsloth/gemma-4-E4B-it-unsloth-bnb-4bit` via
+`--base-model` if you have a 12 GB+ card.
 
 ## Wire format
 
@@ -101,12 +102,14 @@ python train_unsloth.py \
 
 Notes:
 
-- The default base model is `unsloth/gemma-4-e4b-it-bnb-4bit`. Because
-  Gemma 4 is brand new, that exact repo id may not exist yet — if
-  `from_pretrained` 404s, look up the actual name on
-  <https://huggingface.co/unsloth> and pass it via `--base-model`. As a
-  fallback you can use the upstream `google/...` repo with `--no-4bit`,
-  at the cost of more VRAM.
+- The default base model is `unsloth/gemma-4-E2B-it-unsloth-bnb-4bit`,
+  Unsloth's dynamic 4-bit bnb build of Gemma 4 E2B-it, sized to fit on an
+  8 GB 3060. Use `--base-model unsloth/gemma-4-E4B-it-unsloth-bnb-4bit`
+  for the larger E4B variant on a 12 GB+ card. Do **not** point
+  `--base-model` at any `-GGUF` repo — GGUF is a llama.cpp inference
+  format and won't load via `FastLanguageModel.from_pretrained`. For
+  full-precision training, pass `--base-model unsloth/gemma-4-E2B-it
+  --no-4bit` (much more VRAM).
 - Loss is computed on **assistant turns only** — system and user messages
   are masked via Unsloth's `train_on_responses_only` helper, keyed off
   Gemma's `<start_of_turn>user\n` / `<start_of_turn>model\n` markers.
