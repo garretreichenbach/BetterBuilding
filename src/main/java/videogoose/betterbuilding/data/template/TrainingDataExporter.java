@@ -14,7 +14,18 @@ import java.util.List;
  * them as JSONL training data for fine-tuning an LLM with Unsloth or similar.
  *
  * Each template becomes one JSONL line containing a full conversation:
- * system prompt -> user prompt -> (assistant tool_calls + tool results)... -> finish
+ *
+ *   system  -> the same system prompt {@link TemplateGenerator} uses at inference,
+ *              so the model is trained against exactly the prompt it will see live.
+ *   user    -> the build instructions ({@link TemplateGenerator#buildUserPrompt}).
+ *   user    -> alternating turns: each "model" turn contains one or more
+ *   model      <tool_call>...</tool_call> blocks; the following "user" turn
+ *              echoes back the matching <tool_response>...</tool_response>
+ *              blocks. Wire format lives in {@link ToolCallFormat}.
+ *
+ * The conversation uses only system / user / assistant roles (no `tool` role
+ * and no structured `tool_calls` field), so any chat template that supports
+ * a basic three-role chat can carry it — including Gemma's user/model template.
  */
 public class TrainingDataExporter {
 
@@ -152,9 +163,13 @@ public class TrainingDataExporter {
 
 	/**
 	 * Build a single training example (one JSONL line) from a template.
+	 *
+	 * The output mirrors what an inference loop would actually look like:
+	 * one tool call per assistant turn, each followed by a user turn carrying
+	 * the corresponding tool response. Both share the prompt builders in
+	 * {@link TemplateGenerator} so training and inference can never drift.
 	 */
 	private static String buildTrainingExample(TemplateMetaData template) {
-		int[] dims = template.getDimensions();
 		String palette = BlockPalette.toJsonPaletteString();
 
 		// Decompose the template into tool calls
@@ -166,53 +181,44 @@ public class TrainingDataExporter {
 		// Build the conversation
 		JsonArray messages = new JsonArray();
 
-		// System message - use the same prompt the generator uses
+		// System message — pulled from TemplateGenerator so it's identical to inference
 		JsonObject sysMsg = new JsonObject();
 		sysMsg.addProperty("role", "system");
-		sysMsg.addProperty("content", buildTrainingSystemPrompt());
+		sysMsg.addProperty("content", TemplateGenerator.buildSystemPrompt());
 		messages.add(sysMsg);
 
-		// User message
+		// User message — also from TemplateGenerator. The exporter has no real
+		// description for the template, so we synthesise one from the file name.
+		String description = template.getName().replace("_", " ").replace("-", " ");
 		JsonObject userMsg = new JsonObject();
 		userMsg.addProperty("role", "user");
-		userMsg.addProperty("content", buildTrainingUserPrompt(template, palette));
+		userMsg.addProperty("content",
+				TemplateGenerator.buildUserPrompt(null, template.getDimensions(), description, palette));
 		messages.add(userMsg);
 
-		// Assistant tool calls and tool results, grouped into batches
-		// We simulate the agentic loop: each iteration has 1 tool call + 1 tool result
-		int callId = 1;
+		// Alternating assistant / user turns. Each assistant turn emits one
+		// <tool_call> block; the following user turn echoes the matching
+		// <tool_response>. This is the format ToolCallFormat parses at inference.
 		int opsCount = 0;
 		for(ToolCall tc : toolCalls) {
-			String id = "call_" + callId++;
-
-			// Assistant message with tool_calls
 			JsonObject assistantMsg = new JsonObject();
 			assistantMsg.addProperty("role", "assistant");
-			assistantMsg.add("content", null);
-
-			JsonArray toolCallsArray = new JsonArray();
-			JsonObject toolCallObj = new JsonObject();
-			toolCallObj.addProperty("id", id);
-			toolCallObj.addProperty("type", "function");
-			JsonObject fnObj = new JsonObject();
-			fnObj.addProperty("name", tc.name);
-			fnObj.addProperty("arguments", tc.arguments);
-			toolCallObj.add("function", fnObj);
-			toolCallsArray.add(toolCallObj);
-			assistantMsg.add("tool_calls", toolCallsArray);
+			assistantMsg.addProperty("content",
+					ToolCallFormat.serializeCallWithRawArgs(tc.name, tc.arguments));
 			messages.add(assistantMsg);
 
-			// Tool result
-			JsonObject toolResult = new JsonObject();
-			toolResult.addProperty("role", "tool");
-			toolResult.addProperty("tool_call_id", id);
+			String result;
 			if("finish".equals(tc.name)) {
-				toolResult.addProperty("content", "Template finalized with " + opsCount + " operations.");
+				result = "Template finalized with " + opsCount + " operations.";
 			} else {
-				toolResult.addProperty("content", tc.expectedResult);
+				result = tc.expectedResult;
 				opsCount++;
 			}
-			messages.add(toolResult);
+
+			JsonObject toolResultMsg = new JsonObject();
+			toolResultMsg.addProperty("role", "user");
+			toolResultMsg.addProperty("content", ToolCallFormat.serializeResponse(result));
+			messages.add(toolResultMsg);
 		}
 
 		JsonObject example = new JsonObject();
@@ -463,75 +469,6 @@ public class TrainingDataExporter {
 				x, y, z, type,
 				orient != 0 ? ",\"orientation\":" + orient : "");
 		return new ToolCall("place", args, "Placed block at " + x + "," + y + "," + z);
-	}
-
-	// --- Prompt builders (training versions) ---
-
-	private static String buildTrainingSystemPrompt() {
-		// Same system prompt used by TemplateGenerator so the fine-tuned model
-		// learns to respond to the same instructions it will see at inference time
-		return "You are an expert StarMade spaceship and station designer AI. You build 3D voxel templates by calling tools.\n\n" +
-				"COORDINATE SYSTEM:\n" +
-				"- All coordinates are 0-indexed within the given dimensions [x,y,z]\n" +
-				"- Z axis: forward/backward. +Z = nose/front, -Z = tail/rear. This is the ship's LENGTH axis\n" +
-				"- Y axis: up/down. +Y = top, -Y = bottom. This is the ship's HEIGHT axis\n" +
-				"- X axis: left/right. +X = starboard (right), -X = port (left). This is the ship's WIDTH axis\n" +
-				"- The CENTER of the X axis is the ship's spine/midline. Most ships should be symmetric about this axis\n\n" +
-				"BLOCK TYPES & ORIENTATION:\n" +
-				"- block_type values are integer IDs from the provided block palette\n" +
-				"- Orientation values 0-5 control which direction a block faces:\n" +
-				"  0=front(+Z), 1=back(-Z), 2=top(+Y), 3=bottom(-Y), 4=right(+X), 5=left(-X)\n" +
-				"- Weapons should face FORWARD (orientation 0)\n" +
-				"- Thrusters should face BACK (orientation 1)\n\n" +
-				"SHAPE BLOCKS - USE THESE EXTENSIVELY:\n" +
-				"- WEDGE blocks are slope/ramp shapes. Use them to taper edges and create angled surfaces instead of flat walls\n" +
-				"- CORNER blocks fill 3-sided corners where two wedges meet. Use at tips and vertices\n" +
-				"- HEPTA blocks are 7/8 blocks (a cube with one corner cut). Use for subtle chamfers and gentle transitions\n" +
-				"- TETRA blocks are 1/4 pyramids. Use for sharp pointed tips like noses and wing tips\n" +
-				"- SLAB blocks are half-height blocks. Use for fine detailing and thin features\n" +
-				"- Orient shape blocks so the cut/slope faces the correct direction using the orientation parameter\n\n" +
-				"DESIGN PRINCIPLES - CRITICAL:\n" +
-				"- NEVER build a plain box or rectangular prism. Every design must have tapered, angled, or curved surfaces\n" +
-				"- Ships should taper toward the nose (+Z end) using wedges and corners to form a pointed or streamlined front\n" +
-				"- Ships should taper toward the rear (-Z end) around the engines\n" +
-				"- Use wedges along ALL edges where hull meets open space to eliminate boxy 90-degree corners\n" +
-				"- Vary the cross-section along the Z axis: narrower at front and back, wider in the middle\n" +
-				"- Use at least 2-3 different hull/armor colors or tiers to create visual contrast and panel lines\n" +
-				"- Add asymmetric or protruding features: wings, fins, nacelles, antenna masts, turret mounts\n" +
-				"- Sections should be hollow so users can fill them with system blocks\n\n" +
-				"BUILDING METHODOLOGY:\n" +
-				"1. SKELETON: Start by building the central spine/fuselage as a long shape tapered at both ends\n" +
-				"2. HULL: Add the main hull around the spine, varying width and height along the Z axis\n" +
-				"3. SHAPING: Replace all boxy edges with wedges, corners, and hepta blocks. This is the most important step\n" +
-				"4. FEATURES: Add wings, fins, nacelles, cockpit canopy, engine housings, weapon mounts\n" +
-				"5. DETAILING: Add panel lines using different hull tiers, accent lights, glass for cockpits\n" +
-				"6. CLEANUP: Clear any interior blocks for hollow sections, ensure symmetry on X axis\n\n" +
-				"TECHNIQUE NOTES:\n" +
-				"- Use ellipsoid, cylinder, and cone tools to create organic rounded shapes FIRST, then detail with block tools\n" +
-				"- Later tool calls overwrite earlier ones, so layer details on top of base shapes\n" +
-				"- Use the mirror tool to get perfect bilateral symmetry: build one side, then mirror across X\n" +
-				"- Combine shapes: e.g. cone for nose + cylinder for body + ellipsoid for cockpit dome\n" +
-				"- Call 'finish' when you are done building";
-	}
-
-	private static String buildTrainingUserPrompt(TemplateMetaData template, String palette) {
-		int[] dims = template.getDimensions();
-		// Use the template name as a rough description (replace underscores with spaces)
-		String description = template.getName().replace("_", " ").replace("-", " ");
-
-		StringBuilder sb = new StringBuilder();
-		sb.append("Build a StarMade template with these specifications:\n\n");
-		sb.append("DIMENSIONS: ").append(dims[0]).append("x").append(dims[1]).append("x").append(dims[2])
-				.append(" (Width x Height x Length)\n");
-		sb.append("X midpoint (symmetry axis): ").append(dims[0] / 2).append("\n");
-		sb.append("DESCRIPTION: ").append(description).append("\n");
-		sb.append("\nAVAILABLE BLOCK PALETTE (ONLY use block_type IDs from this list):\n");
-		sb.append(palette).append("\n");
-		sb.append("\nREMINDER: Do NOT build a plain box. Use wedge, corner, hepta, and tetra blocks from the palette ");
-		sb.append("to create tapered, angled surfaces. Every edge where hull meets air should use shape blocks. ");
-		sb.append("Start with the overall tapered shape, then add features and details.\n");
-		sb.append("Begin building now, then call 'finish' with a name when done.");
-		return sb.toString();
 	}
 
 	// --- Utility ---

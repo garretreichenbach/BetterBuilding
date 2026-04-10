@@ -2,10 +2,7 @@ package videogoose.betterbuilding.data.template;
 
 import api.utils.element.Blocks;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import videogoose.betterbuilding.BetterBuilding;
 import videogoose.betterbuilding.manager.ConfigManager;
 import videogoose.betterbuilding.manager.LMStudioClient;
@@ -72,7 +69,6 @@ public class TemplateGenerator {
 				: BlockPalette.toJsonPaletteString();
 
 		TemplateMetaData template = new TemplateMetaData("ai_generated", outputDims);
-		JsonArray tools = buildTools();
 		JsonArray messages = new JsonArray();
 		messages.add(makeMessage("system", buildSystemPrompt()));
 		messages.add(makeMessage("user", buildUserPrompt(references, outputDims, description, palette)));
@@ -81,28 +77,30 @@ public class TemplateGenerator {
 
 		int totalOps = 0;
 		for(int iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-			JsonObject assistantMsg = client.chatCompletionWithTools(messages, tools);
+			// We pass tools=null because the model is trained to emit tool calls
+			// as <tool_call>...</tool_call> text inside `content`. See ToolCallFormat.
+			JsonObject assistantMsg = client.chatCompletionWithTools(messages, null);
 			messages.add(assistantMsg);
 
-			if(!assistantMsg.has("tool_calls")) {
-				BetterBuilding.getInstance().logInfo("AI stopped calling tools after " + totalOps + " operations");
+			String assistantContent = assistantMsg.has("content") && !assistantMsg.get("content").isJsonNull()
+					? assistantMsg.get("content").getAsString()
+					: "";
+
+			List<ToolCallFormat.ParsedCall> calls = ToolCallFormat.parse(assistantContent);
+			if(calls.isEmpty()) {
+				BetterBuilding.getInstance().logInfo("AI emitted no tool calls (stopping after " + totalOps + " operations). Last content: " +
+						(assistantContent.length() > 200 ? assistantContent.substring(0, 200) + "..." : assistantContent));
 				break;
 			}
 
-			JsonArray toolCalls = assistantMsg.getAsJsonArray("tool_calls");
 			boolean finished = false;
+			StringBuilder responseBuf = new StringBuilder();
 
-			for(JsonElement tcEl : toolCalls) {
-				JsonObject toolCall = tcEl.getAsJsonObject();
-				String id = toolCall.get("id").getAsString();
-				JsonObject function = toolCall.getAsJsonObject("function");
-				String fnName = function.get("name").getAsString();
-				JsonObject args = new JsonParser().parse(function.get("arguments").getAsString()).getAsJsonObject();
-
+			for(ToolCallFormat.ParsedCall call : calls) {
 				String result;
-				if("finish".equals(fnName)) {
-					if(args.has("name")) {
-						String aiName = args.get("name").getAsString().trim()
+				if("finish".equals(call.name)) {
+					if(call.arguments.has("name")) {
+						String aiName = call.arguments.get("name").getAsString().trim()
 								.replaceAll("[^a-zA-Z0-9_\\-]", "_")
 								.replaceAll("_+", "_");
 						if(!aiName.isEmpty()) template.setName(aiName);
@@ -110,16 +108,17 @@ public class TemplateGenerator {
 					result = "Template finalized with " + totalOps + " operations.";
 					finished = true;
 				} else {
-					result = executeTool(fnName, args, template, outputDims);
+					result = executeTool(call.name, call.arguments, template, outputDims);
 					totalOps++;
 				}
 
-				JsonObject toolResult = new JsonObject();
-				toolResult.addProperty("role", "tool");
-				toolResult.addProperty("tool_call_id", id);
-				toolResult.addProperty("content", result);
-				messages.add(toolResult);
+				if(responseBuf.length() > 0) responseBuf.append("\n");
+				responseBuf.append(ToolCallFormat.serializeResponse(result));
 			}
+
+			// All tool responses for this turn are delivered as a single user message,
+			// since Gemma's chat template only knows user/model roles.
+			messages.add(makeMessage("user", responseBuf.toString()));
 
 			if(finished) {
 				BetterBuilding.getInstance().logInfo("Template generation finished after " + totalOps + " operations");
@@ -477,8 +476,90 @@ public class TemplateGenerator {
 
 	// --- Prompt ---
 
-	private static String buildSystemPrompt() {
-		return "You are an expert StarMade spaceship and station designer AI. You build 3D voxel templates by calling tools.\n\n" +
+	/**
+	 * The system prompt is shared between live inference and the training data
+	 * exporter — it must be byte-identical in both places or the fine-tune will
+	 * fight the prompt at inference time. The {@link TrainingDataExporter}
+	 * calls into this method directly.
+	 */
+	static String buildSystemPrompt() {
+		return SYSTEM_PROMPT_BODY + "\n\n" + buildToolDocs();
+	}
+
+	/**
+	 * Renders every tool the agent can call as plain text, in a format the
+	 * model can be trained to emit. The wire format is defined in
+	 * {@link ToolCallFormat}.
+	 */
+	static String buildToolDocs() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("## TOOLS\n");
+		sb.append("You build templates by emitting tool calls. Each call must appear inside a\n");
+		sb.append(ToolCallFormat.CALL_OPEN).append(" / ").append(ToolCallFormat.CALL_CLOSE)
+				.append(" block as a single JSON object with this shape:\n");
+		sb.append(ToolCallFormat.CALL_OPEN).append("\n");
+		sb.append("{\"name\": \"<tool_name>\", \"arguments\": {<args>}}\n");
+		sb.append(ToolCallFormat.CALL_CLOSE).append("\n\n");
+		sb.append("You may emit multiple tool calls in one turn. After your turn, the result of\n");
+		sb.append("each call is delivered back to you wrapped in ").append(ToolCallFormat.RESPONSE_OPEN)
+				.append(" / ").append(ToolCallFormat.RESPONSE_CLOSE).append(" blocks.\n\n");
+		sb.append("Available tools:\n\n");
+
+		appendTool(sb, "fill",
+				"Fill a rectangular region with a block type.",
+				"from_x, from_y, from_z, to_x, to_y, to_z, block_type",
+				"orientation");
+		appendTool(sb, "shell",
+				"Create a hollow shell of a rectangular region (walls only).",
+				"from_x, from_y, from_z, to_x, to_y, to_z, block_type",
+				"orientation, thickness");
+		appendTool(sb, "place",
+				"Place a single block at a position.",
+				"x, y, z, block_type",
+				"orientation");
+		appendTool(sb, "line",
+				"Draw a line of blocks between two points.",
+				"from_x, from_y, from_z, to_x, to_y, to_z, block_type",
+				"orientation");
+		appendTool(sb, "clear",
+				"Clear a rectangular region to air.",
+				"from_x, from_y, from_z, to_x, to_y, to_z",
+				"");
+		appendTool(sb, "ellipsoid",
+				"Create an ellipsoid (sphere, egg, or oval). Use for rounded fuselages, domes, pods, and organic shapes. Set all radii equal for a sphere.",
+				"center_x, center_y, center_z, radius_x, radius_y, radius_z, block_type",
+				"orientation, hollow (bool)");
+		appendTool(sb, "cylinder",
+				"Create a cylinder along an arbitrary axis between two points. Use for engine nacelles, barrels, tubes, and structural columns.",
+				"from_x, from_y, from_z, to_x, to_y, to_z, radius, block_type",
+				"orientation, hollow (bool)");
+		appendTool(sb, "cone",
+				"Create a cone or tapered cylinder between two points. The shape transitions from base_radius at the from-point to tip_radius at the to-point. Use for nose cones, exhaust nozzles, tapered fuselages, and pointed shapes.",
+				"from_x, from_y, from_z, to_x, to_y, to_z, base_radius, block_type",
+				"tip_radius, orientation, hollow (bool)");
+		appendTool(sb, "mirror",
+				"Mirror all existing blocks across an axis for symmetry. Defaults to X axis (bilateral ship symmetry). Only copies into empty spaces. Build one half of the ship, then mirror to get perfect symmetry.",
+				"",
+				"axis (X|Y|Z), from_x, from_y, from_z, to_x, to_y, to_z");
+		appendTool(sb, "finish",
+				"Call when the template is complete. Provide a short snake_case name for the template.",
+				"name (string)",
+				"");
+
+		sb.append("\nWhen you are done building, emit a `finish` tool call. Do not write any prose ");
+		sb.append("outside of tool calls — every response should consist entirely of one or more ")
+				.append(ToolCallFormat.CALL_OPEN).append(" blocks.");
+		return sb.toString();
+	}
+
+	private static void appendTool(StringBuilder sb, String name, String desc, String required, String optional) {
+		sb.append("- ").append(name).append(": ").append(desc).append("\n");
+		if(!required.isEmpty()) sb.append("    required: ").append(required).append("\n");
+		if(!optional.isEmpty()) sb.append("    optional: ").append(optional).append("\n");
+	}
+
+	private static final String SYSTEM_PROMPT_BODY =
+			"You are an expert StarMade spaceship and station designer AI. You build 3D voxel templates by calling tools.\n\n" +
 				"COORDINATE SYSTEM:\n" +
 				"- All coordinates are 0-indexed within the given dimensions [x,y,z]\n" +
 				"- Z axis: forward/backward. +Z = nose/front, -Z = tail/rear. This is the ship's LENGTH axis\n" +
@@ -527,9 +608,8 @@ public class TemplateGenerator {
 				"- Use the mirror tool to get perfect bilateral symmetry: build one side, then mirror across X\n" +
 				"- Combine shapes: e.g. cone for nose + cylinder for body + ellipsoid for cockpit dome\n" +
 				"- Call 'finish' when you are done building";
-	}
 
-	private static String buildUserPrompt(List<TemplateMetaData> references, int[] dims, String description, String palette) {
+	static String buildUserPrompt(List<TemplateMetaData> references, int[] dims, String description, String palette) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Build a StarMade template with these specifications:\n\n");
 		sb.append("DIMENSIONS: ").append(dims[0]).append("x").append(dims[1]).append("x").append(dims[2])
@@ -562,211 +642,4 @@ public class TemplateGenerator {
 		return sb.toString();
 	}
 
-	// --- Tool definitions ---
-
-	private static JsonArray buildTools() {
-		JsonArray tools = new JsonArray();
-		tools.add(makeTool("fill", "Fill a rectangular region with a block type",
-				new String[]{"from_x", "from_y", "from_z", "to_x", "to_y", "to_z", "block_type"},
-				new String[]{"orientation"}));
-		tools.add(makeTool("shell", "Create a hollow shell of a rectangular region (walls only)",
-				new String[]{"from_x", "from_y", "from_z", "to_x", "to_y", "to_z", "block_type"},
-				new String[]{"orientation", "thickness"}));
-		tools.add(makeTool("place", "Place a single block at a position",
-				new String[]{"x", "y", "z", "block_type"},
-				new String[]{"orientation"}));
-		tools.add(makeTool("line", "Draw a line of blocks between two points",
-				new String[]{"from_x", "from_y", "from_z", "to_x", "to_y", "to_z", "block_type"},
-				new String[]{"orientation"}));
-		tools.add(makeTool("clear", "Clear a rectangular region to air",
-				new String[]{"from_x", "from_y", "from_z", "to_x", "to_y", "to_z"},
-				new String[]{}));
-		tools.add(makeEllipsoidTool());
-		tools.add(makeCylinderTool());
-		tools.add(makeConeTool());
-		tools.add(makeMirrorTool());
-		tools.add(makeFinishTool());
-		return tools;
-	}
-
-	private static JsonObject makeTool(String name, String description, String[] requiredIntParams, String[] optionalIntParams) {
-		JsonObject tool = new JsonObject();
-		tool.addProperty("type", "function");
-
-		JsonObject function = new JsonObject();
-		function.addProperty("name", name);
-		function.addProperty("description", description);
-
-		JsonObject parameters = new JsonObject();
-		parameters.addProperty("type", "object");
-
-		JsonObject properties = new JsonObject();
-		JsonArray required = new JsonArray();
-
-		for(String param : requiredIntParams) {
-			JsonObject prop = new JsonObject();
-			prop.addProperty("type", "integer");
-			properties.add(param, prop);
-			required.add(new JsonPrimitive(param));
-		}
-		for(String param : optionalIntParams) {
-			JsonObject prop = new JsonObject();
-			prop.addProperty("type", "integer");
-			properties.add(param, prop);
-		}
-
-		parameters.add("properties", properties);
-		parameters.add("required", required);
-		function.add("parameters", parameters);
-		tool.add("function", function);
-		return tool;
-	}
-
-	private static JsonObject makeEllipsoidTool() {
-		JsonObject tool = new JsonObject();
-		tool.addProperty("type", "function");
-		JsonObject function = new JsonObject();
-		function.addProperty("name", "ellipsoid");
-		function.addProperty("description", "Create an ellipsoid (sphere, egg, or oval shape). Use for rounded fuselages, domes, pods, and organic shapes. Set all radii equal for a sphere.");
-		JsonObject parameters = new JsonObject();
-		parameters.addProperty("type", "object");
-		JsonObject properties = new JsonObject();
-		JsonArray required = new JsonArray();
-		for(String p : new String[]{"center_x", "center_y", "center_z", "radius_x", "radius_y", "radius_z", "block_type"}) {
-			JsonObject prop = new JsonObject();
-			prop.addProperty("type", "integer");
-			properties.add(p, prop);
-			required.add(new JsonPrimitive(p));
-		}
-		JsonObject orientProp = new JsonObject();
-		orientProp.addProperty("type", "integer");
-		properties.add("orientation", orientProp);
-		JsonObject hollowProp = new JsonObject();
-		hollowProp.addProperty("type", "boolean");
-		hollowProp.addProperty("description", "If true, only the outer shell is placed (hollow inside)");
-		properties.add("hollow", hollowProp);
-		parameters.add("properties", properties);
-		parameters.add("required", required);
-		function.add("parameters", parameters);
-		tool.add("function", function);
-		return tool;
-	}
-
-	private static JsonObject makeCylinderTool() {
-		JsonObject tool = new JsonObject();
-		tool.addProperty("type", "function");
-		JsonObject function = new JsonObject();
-		function.addProperty("name", "cylinder");
-		function.addProperty("description", "Create a cylinder along an arbitrary axis between two points. Use for engine nacelles, barrels, tubes, and structural columns.");
-		JsonObject parameters = new JsonObject();
-		parameters.addProperty("type", "object");
-		JsonObject properties = new JsonObject();
-		JsonArray required = new JsonArray();
-		for(String p : new String[]{"from_x", "from_y", "from_z", "to_x", "to_y", "to_z", "radius", "block_type"}) {
-			JsonObject prop = new JsonObject();
-			prop.addProperty("type", "integer");
-			properties.add(p, prop);
-			required.add(new JsonPrimitive(p));
-		}
-		JsonObject orientProp = new JsonObject();
-		orientProp.addProperty("type", "integer");
-		properties.add("orientation", orientProp);
-		JsonObject hollowProp = new JsonObject();
-		hollowProp.addProperty("type", "boolean");
-		hollowProp.addProperty("description", "If true, only the outer shell is placed (hollow tube)");
-		properties.add("hollow", hollowProp);
-		parameters.add("properties", properties);
-		parameters.add("required", required);
-		function.add("parameters", parameters);
-		tool.add("function", function);
-		return tool;
-	}
-
-	private static JsonObject makeConeTool() {
-		JsonObject tool = new JsonObject();
-		tool.addProperty("type", "function");
-		JsonObject function = new JsonObject();
-		function.addProperty("name", "cone");
-		function.addProperty("description", "Create a cone or tapered cylinder between two points. The shape transitions from base_radius at the from-point to tip_radius at the to-point. Use for nose cones, exhaust nozzles, tapered fuselages, and pointed shapes.");
-		JsonObject parameters = new JsonObject();
-		parameters.addProperty("type", "object");
-		JsonObject properties = new JsonObject();
-		JsonArray required = new JsonArray();
-		for(String p : new String[]{"from_x", "from_y", "from_z", "to_x", "to_y", "to_z", "base_radius", "block_type"}) {
-			JsonObject prop = new JsonObject();
-			prop.addProperty("type", "integer");
-			properties.add(p, prop);
-			required.add(new JsonPrimitive(p));
-		}
-		JsonObject tipProp = new JsonObject();
-		tipProp.addProperty("type", "integer");
-		tipProp.addProperty("description", "Radius at the to-point end (default 0 for a pointed cone)");
-		properties.add("tip_radius", tipProp);
-		JsonObject orientProp = new JsonObject();
-		orientProp.addProperty("type", "integer");
-		properties.add("orientation", orientProp);
-		JsonObject hollowProp = new JsonObject();
-		hollowProp.addProperty("type", "boolean");
-		hollowProp.addProperty("description", "If true, only the outer shell is placed");
-		properties.add("hollow", hollowProp);
-		parameters.add("properties", properties);
-		parameters.add("required", required);
-		function.add("parameters", parameters);
-		tool.add("function", function);
-		return tool;
-	}
-
-	private static JsonObject makeMirrorTool() {
-		JsonObject tool = new JsonObject();
-		tool.addProperty("type", "function");
-		JsonObject function = new JsonObject();
-		function.addProperty("name", "mirror");
-		function.addProperty("description", "Mirror all existing blocks across an axis for symmetry. Defaults to X axis (bilateral ship symmetry). Only copies into empty spaces. Build one half of the ship, then mirror to get perfect symmetry.");
-		JsonObject parameters = new JsonObject();
-		parameters.addProperty("type", "object");
-		JsonObject properties = new JsonObject();
-		// All optional for mirror
-		JsonObject axisProp = new JsonObject();
-		axisProp.addProperty("type", "string");
-		axisProp.addProperty("description", "Axis to mirror across: X (left/right, default), Y (top/bottom), or Z (front/back)");
-		properties.add("axis", axisProp);
-		for(String p : new String[]{"from_x", "from_y", "from_z", "to_x", "to_y", "to_z"}) {
-			JsonObject prop = new JsonObject();
-			prop.addProperty("type", "integer");
-			prop.addProperty("description", "Optional region bounds (defaults to full template)");
-			properties.add(p, prop);
-		}
-		parameters.add("properties", properties);
-		parameters.add("required", new JsonArray());
-		function.add("parameters", parameters);
-		tool.add("function", function);
-		return tool;
-	}
-
-	private static JsonObject makeFinishTool() {
-		JsonObject tool = new JsonObject();
-		tool.addProperty("type", "function");
-
-		JsonObject function = new JsonObject();
-		function.addProperty("name", "finish");
-		function.addProperty("description", "Call when the template is complete. Provide a short snake_case name for the template.");
-
-		JsonObject parameters = new JsonObject();
-		parameters.addProperty("type", "object");
-
-		JsonObject properties = new JsonObject();
-		JsonObject nameProp = new JsonObject();
-		nameProp.addProperty("type", "string");
-		nameProp.addProperty("description", "Short snake_case name for the template (e.g. small_fighter, orbital_station)");
-		properties.add("name", nameProp);
-
-		parameters.add("properties", properties);
-		JsonArray required = new JsonArray();
-		required.add(new JsonPrimitive("name"));
-		parameters.add("required", required);
-
-		function.add("parameters", parameters);
-		tool.add("function", function);
-		return tool;
-	}
 }
