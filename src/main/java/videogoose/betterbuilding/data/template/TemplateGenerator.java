@@ -22,6 +22,15 @@ public class TemplateGenerator {
 	public static final int DEFAULT_MAX_DIM = 64;
 	private static final int MAX_RETRIES = 3;
 
+	/** Callback for sending status updates to the player during generation. */
+	public interface StatusCallback {
+		void onStatus(String message);
+	}
+
+	private static final StatusCallback NOOP_CALLBACK = new StatusCallback() {
+		public void onStatus(String message) {}
+	};
+
 	private static final Pattern LUA_FENCE_PATTERN = Pattern.compile(
 			"```lua\\s*\\n(.*?)```", Pattern.DOTALL);
 	private static final Pattern GENERIC_FENCE_PATTERN = Pattern.compile(
@@ -40,6 +49,10 @@ public class TemplateGenerator {
 	};
 
 	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description, Set<Short> hotbarTypes) throws Exception {
+		return generate(references, outputDims, description, hotbarTypes, NOOP_CALLBACK);
+	}
+
+	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description, Set<Short> hotbarTypes, StatusCallback status) throws Exception {
 		// outputDims may be null — if so, the AI will choose dimensions before building
 
 		String provider = ConfigManager.getProvider();
@@ -89,8 +102,12 @@ public class TemplateGenerator {
 
 		// If no dimensions provided, ask the AI to choose them
 		if(outputDims == null) {
+			status.onStatus("Choosing dimensions...");
 			outputDims = chooseDimensions(client, description);
-			BetterBuilding.getInstance().logInfo("AI chose dimensions: " + outputDims[0] + "x" + outputDims[1] + "x" + outputDims[2]);
+			String dimMsg = "Dimensions: " + outputDims[0] + "x" + outputDims[1] + "x" + outputDims[2] +
+					" (Width x Height x Length)";
+			BetterBuilding.getInstance().logInfo("AI chose " + dimMsg);
+			status.onStatus(dimMsg);
 		}
 		validateDimensions(outputDims);
 
@@ -104,7 +121,9 @@ public class TemplateGenerator {
 		BetterBuilding.getInstance().logInfo("Starting multi-phase generation via " + providerName + "...");
 
 		for(int phase = 0; phase < BUILD_PHASES.length; phase++) {
-			BetterBuilding.getInstance().logInfo("=== " + BUILD_PHASES[phase].substring(0, BUILD_PHASES[phase].indexOf(':') + 1) + " ===");
+			String phaseName = BUILD_PHASES[phase].substring(0, BUILD_PHASES[phase].indexOf(':'));
+			BetterBuilding.getInstance().logInfo("=== " + phaseName + " ===");
+			status.onStatus("[" + (phase + 1) + "/" + BUILD_PHASES.length + "] " + phaseName + "...");
 
 			// Build the phase prompt with current template state
 			StringBuilder phasePrompt = new StringBuilder();
@@ -164,7 +183,9 @@ public class TemplateGenerator {
 				totalOps += opsThisPhase;
 
 				int blockCount = countNonAir(template);
-				BetterBuilding.getInstance().logInfo("  Phase " + (phase + 1) + " complete: " + opsThisPhase + " ops, " + blockCount + " total blocks");
+				String phaseResult = phaseName + " complete: " + opsThisPhase + " ops, " + blockCount + " total blocks";
+				BetterBuilding.getInstance().logInfo("  " + phaseResult);
+				status.onStatus(phaseResult);
 
 				// Add a confirmation message so the LLM knows the phase succeeded
 				messages.add(makeMessage("user", "Phase completed successfully. " + blockCount + " blocks now placed."));
@@ -173,7 +194,9 @@ public class TemplateGenerator {
 			}
 
 			if(!phaseSuccess) {
-				BetterBuilding.getInstance().logWarning("Phase " + (phase + 1) + " failed after " + (MAX_RETRIES + 1) + " attempts, skipping to next phase.");
+				String failMsg = phaseName + " failed after " + (MAX_RETRIES + 1) + " attempts, skipping.";
+				BetterBuilding.getInstance().logWarning(failMsg);
+				status.onStatus(failMsg);
 			}
 		}
 
@@ -181,7 +204,10 @@ public class TemplateGenerator {
 			throw new Exception("All phases failed to place any blocks.");
 		}
 
-		BetterBuilding.getInstance().logInfo("Generation complete: " + totalOps + " total ops, " + countNonAir(template) + " blocks");
+		int finalBlocks = countNonAir(template);
+		String doneMsg = "Generation complete: " + totalOps + " ops, " + finalBlocks + " blocks";
+		BetterBuilding.getInstance().logInfo(doneMsg);
+		status.onStatus(doneMsg);
 		return template;
 	}
 
