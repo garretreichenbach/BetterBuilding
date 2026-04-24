@@ -87,6 +87,13 @@ public class TemplateGenerator {
 				: BlockPalette.toPaletteMap();
 		String paletteString = palettMapToString(paletteMap);
 
+		// If no dimensions provided, ask the AI to choose them
+		if(outputDims == null) {
+			outputDims = chooseDimensions(client, description);
+			BetterBuilding.getInstance().logInfo("AI chose dimensions: " + outputDims[0] + "x" + outputDims[1] + "x" + outputDims[2]);
+		}
+		validateDimensions(outputDims);
+
 		JsonArray messages = new JsonArray();
 		messages.add(makeMessage("system", buildSystemPrompt()));
 		messages.add(makeMessage("user", buildUserPrompt(references, outputDims, description, paletteString)));
