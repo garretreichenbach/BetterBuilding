@@ -40,7 +40,7 @@ public class TemplateGenerator {
 	};
 
 	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description, Set<Short> hotbarTypes) throws Exception {
-		validateDimensions(outputDims);
+		// outputDims may be null — if so, the AI will choose dimensions before building
 
 		String provider = ConfigManager.getProvider();
 		String url, model, providerName, apiKey;
@@ -203,7 +203,7 @@ public class TemplateGenerator {
 				"You choose dimensions for StarMade voxel templates. " +
 						"Given a description, respond with ONLY three integers: width height length (X Y Z), space-separated.\n" +
 						"X = width (left/right), Y = height (up/down), Z = length (front/back).\n" +
-						"Guidelines: fighters 10-20, corvettes 15-30, frigates 20-40, capital ships 40-64. Max 64 per axis.\n" +
+						"Guidelines: fighters 10-30, corvettes 30-70, frigates 70-150, capital ships 150+. Max 200 per axis.\n" +
 						"Ships are usually longer (Z) than wide (X) and taller (Y). Stations can be more cubic.\n" +
 						"Respond with ONLY the three numbers, nothing else. Example: 12 8 24"));
 		messages.add(makeMessage("user", description));
