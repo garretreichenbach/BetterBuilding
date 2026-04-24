@@ -20,12 +20,24 @@ import java.util.regex.Pattern;
 public class TemplateGenerator {
 
 	public static final int DEFAULT_MAX_DIM = 64;
-	private static final int MAX_RETRIES = 5;
+	private static final int MAX_RETRIES = 3;
 
 	private static final Pattern LUA_FENCE_PATTERN = Pattern.compile(
 			"```lua\\s*\\n(.*?)```", Pattern.DOTALL);
 	private static final Pattern GENERIC_FENCE_PATTERN = Pattern.compile(
 			"```\\s*\\n(.*?)```", Pattern.DOTALL);
+
+	private static final String[] BUILD_PHASES = {
+			"PHASE 1 — SKELETON: Build the central spine/fuselage. Use cone() or cylinder() to create a long tapered " +
+					"shape along the Z axis. This is the core silhouette — keep it simple, just the main body shape. " +
+					"Call set_name() with a descriptive name.",
+			"PHASE 2 — HULL & SHAPING: Add hull plating around the skeleton. Use fill() to add bulk where needed, " +
+					"then replace boxy edges with wedge, corner, and hepta blocks. Taper the nose and tail.",
+			"PHASE 3 — FEATURES: Add wings, fins, nacelles, cockpit canopy, engine housings, weapon mounts. " +
+					"Build features on ONE side of the X axis only — mirror() will be used later for symmetry.",
+			"PHASE 4 — DETAILING & CLEANUP: Add panel lines using different block colors, accent lights, glass for cockpits. " +
+					"Use mirror(\"X\") for bilateral symmetry. Use hollow() to carve out the interior. Final polish."
+	};
 
 	public static TemplateMetaData generate(List<TemplateMetaData> references, int[] outputDims, String description, Set<Short> hotbarTypes) throws Exception {
 		validateDimensions(outputDims);
@@ -79,76 +91,99 @@ public class TemplateGenerator {
 		messages.add(makeMessage("system", buildSystemPrompt()));
 		messages.add(makeMessage("user", buildUserPrompt(references, outputDims, description, paletteString)));
 
-		BetterBuilding.getInstance().logInfo("Requesting Lua build script via " + providerName + "...");
+		TemplateMetaData template = new TemplateMetaData("ai_generated", outputDims);
+		int totalOps = 0;
 
-		TemplateMetaData template = null;
-		String lastError = null;
+		BetterBuilding.getInstance().logInfo("Starting multi-phase generation via " + providerName + "...");
 
-		for(int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-			if(attempt > 0) {
-				BetterBuilding.getInstance().logInfo("Retry " + attempt + "/" + MAX_RETRIES + " — error was: " + lastError);
-				messages.add(makeMessage("user",
-						"Your Lua code produced an error. Fix the issue and output corrected Lua code.\n\nError:\n" + lastError));
+		for(int phase = 0; phase < BUILD_PHASES.length; phase++) {
+			BetterBuilding.getInstance().logInfo("=== " + BUILD_PHASES[phase].substring(0, BUILD_PHASES[phase].indexOf(':') + 1) + " ===");
+
+			// Build the phase prompt with current template state
+			StringBuilder phasePrompt = new StringBuilder();
+			phasePrompt.append(BUILD_PHASES[phase]).append("\n\n");
+
+			if(phase > 0) {
+				// Show what's been built so far
+				int blockCount = countNonAir(template);
+				phasePrompt.append("CURRENT STATE (").append(blockCount).append(" blocks placed so far):\n");
+				phasePrompt.append("Block counts: ").append(BlockPalette.summarizeTemplate(template)).append("\n");
+				phasePrompt.append("Cross-sections:\n").append(BlockPalette.structuralSummary(template)).append("\n");
 			}
 
-			JsonObject assistantMsg = client.chatCompletionWithTools(messages, null);
-			messages.add(assistantMsg);
+			phasePrompt.append("Write a ```lua code block for THIS PHASE ONLY. ");
+			phasePrompt.append("The template already contains the work from previous phases — build on top of it.");
 
-			String content = assistantMsg.has("content") && !assistantMsg.get("content").isJsonNull()
-					? assistantMsg.get("content").getAsString()
-					: "";
+			messages.add(makeMessage("user", phasePrompt.toString()));
 
-			String luaCode = extractLuaCode(content);
-			if(luaCode == null || luaCode.trim().isEmpty()) {
-				lastError = "No Lua code found in response. Wrap your code in ```lua ... ``` fences.";
-				continue;
+			// Try this phase with retries
+			boolean phaseSuccess = false;
+			String lastError = null;
+			for(int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+				if(attempt > 0) {
+					BetterBuilding.getInstance().logInfo("  Retry " + attempt + "/" + MAX_RETRIES + " — error: " + lastError);
+					messages.add(makeMessage("user",
+							"Your Lua code produced an error. Fix the issue and output corrected Lua code.\n\nError:\n" + lastError));
+				}
+
+				JsonObject assistantMsg = client.chatCompletionWithTools(messages, null);
+				messages.add(assistantMsg);
+
+				String content = assistantMsg.has("content") && !assistantMsg.get("content").isJsonNull()
+						? assistantMsg.get("content").getAsString()
+						: "";
+
+				String luaCode = extractLuaCode(content);
+				if(luaCode == null || luaCode.trim().isEmpty()) {
+					lastError = "No Lua code found in response. Wrap your code in ```lua ... ``` fences.";
+					continue;
+				}
+
+				LuaExecutor executor = new LuaExecutor(template, outputDims, paletteMap);
+				try {
+					executor.execute(luaCode);
+				} catch(Exception e) {
+					lastError = e.getMessage();
+					BetterBuilding.getInstance().logWarning("Lua error (phase " + (phase + 1) + ", attempt " + (attempt + 1) + "): " + lastError);
+					BetterBuilding.getInstance().logWarning("Failed script:\n" + luaCode);
+					continue;
+				}
+
+				if(executor.getTemplateName() != null && !executor.getTemplateName().isEmpty()) {
+					template.setName(executor.getTemplateName());
+				}
+
+				int opsThisPhase = executor.getTotalOps();
+				totalOps += opsThisPhase;
+
+				int blockCount = countNonAir(template);
+				BetterBuilding.getInstance().logInfo("  Phase " + (phase + 1) + " complete: " + opsThisPhase + " ops, " + blockCount + " total blocks");
+
+				// Add a confirmation message so the LLM knows the phase succeeded
+				messages.add(makeMessage("user", "Phase completed successfully. " + blockCount + " blocks now placed."));
+				phaseSuccess = true;
+				break;
 			}
 
-			template = new TemplateMetaData("ai_generated", outputDims);
-			LuaExecutor executor = new LuaExecutor(template, outputDims, paletteMap);
-
-			try {
-				executor.execute(luaCode);
-			} catch(Exception e) {
-				lastError = e.getMessage();
-				BetterBuilding.getInstance().logWarning("Lua script error (attempt " + (attempt + 1) + "): " + lastError);
-				BetterBuilding.getInstance().logWarning("Failed script:\n" + luaCode);
-				template = null;
-				continue;
+			if(!phaseSuccess) {
+				BetterBuilding.getInstance().logWarning("Phase " + (phase + 1) + " failed after " + (MAX_RETRIES + 1) + " attempts, skipping to next phase.");
 			}
-
-			if(executor.getTotalOps() == 0) {
-				lastError = "Script ran but did not call any building functions (fill, place, etc.). Your code must call at least one building primitive.";
-				template = null;
-				continue;
-			}
-
-			// Count non-air blocks
-			int blockCount = 0;
-			short[] types = template.getBlockTypes();
-			for(short t : types) {
-				if(t != 0) blockCount++;
-			}
-			if(blockCount == 0) {
-				lastError = "Script called building functions but resulted in 0 non-air blocks. Check your block_type IDs and coordinates.";
-				template = null;
-				continue;
-			}
-
-			// Apply template name if set via set_name()
-			if(executor.getTemplateName() != null && !executor.getTemplateName().isEmpty()) {
-				template.setName(executor.getTemplateName());
-			}
-
-			BetterBuilding.getInstance().logInfo("Lua script executed successfully: " + executor.getTotalOps() + " operations, " + blockCount + " blocks placed");
-			break;
 		}
 
-		if(template == null) {
-			throw new Exception("Failed to generate template after " + (MAX_RETRIES + 1) + " attempts. Last error: " + lastError);
+		if(totalOps == 0 || countNonAir(template) == 0) {
+			throw new Exception("All phases failed to place any blocks.");
 		}
 
+		BetterBuilding.getInstance().logInfo("Generation complete: " + totalOps + " total ops, " + countNonAir(template) + " blocks");
 		return template;
+	}
+
+	private static int countNonAir(TemplateMetaData template) {
+		int count = 0;
+		for(short t : template.getBlockTypes()) {
+			if(t != 0) count++;
+		}
+		return count;
 	}
 
 	/**
@@ -219,7 +254,7 @@ public class TemplateGenerator {
 		sb.append("environment with the following building functions and globals available.\n\n");
 		sb.append("### Globals\n");
 		sb.append("- `dims.x`, `dims.y`, `dims.z` — the template dimensions\n");
-		sb.append("- `blocks` — table of block type IDs by name (e.g. blocks.HULL_BLACK, blocks.WEDGE_GREY)\n");
+		sb.append("- `blocks` — table of block type IDs by name (e.g. blocks.GREY_HULL, blocks.BLACK_STANDARD_ARMOR)\n");
 		sb.append("- `orient` — table of named orientation constants (see ORIENTATION SYSTEM above)\n");
 		sb.append("  Basic: orient.FRONT, orient.BACK, orient.TOP, orient.BOTTOM, orient.RIGHT, orient.LEFT\n");
 		sb.append("  Wedge: orient.wedge_top_front, orient.wedge_top_right, orient.wedge_top_back, orient.wedge_top_left,\n");
@@ -313,71 +348,55 @@ public class TemplateGenerator {
 
 	private static final String SYSTEM_PROMPT_BODY =
 			"You are an expert StarMade spaceship and station designer AI. You write Lua code to build 3D voxel templates.\n\n" +
+				"CRITICAL RULES — VIOLATING THESE WILL CAUSE ERRORS:\n" +
+				"1. ONLY use block names from the BLOCK PALETTE in the user prompt. Access them as blocks.EXACT_NAME.\n" +
+				"   If a name is not in the palette, it does NOT exist. Do not guess or invent block names.\n" +
+				"2. Use orient.NAME for orientations — never raw integers.\n" +
+				"3. Lua syntax reminders — these are COMMON MISTAKES that WILL crash your script:\n" +
+				"   - `and`/`or`/`not` — NOT `&&`/`||`/`!`\n" +
+				"   - `math.abs()` — NOT `abs()`\n" +
+				"   - `for i = 1, 10 do` — NOT `for i = 1 to 10 do` (use COMMA, not 'to')\n" +
+				"   - `~=` for not-equal — NOT `!=`\n" +
+				"4. Do NOT redefine `dims`. It is already a global with dims.x, dims.y, dims.z set for you.\n" +
+				"5. Call the provided building primitives DIRECTLY. Do not write wrapper functions or abstractions.\n" +
+				"6. Every line of code must DO something. No pseudo-code, no TODOs, no \"omitted for brevity\".\n\n" +
 				"COORDINATE SYSTEM:\n" +
-				"- All coordinates are 0-indexed within the given dimensions [x,y,z]\n" +
-				"- Z axis: forward/backward. +Z = nose/front, -Z = tail/rear. This is the ship's LENGTH axis\n" +
-				"- Y axis: up/down. +Y = top, -Y = bottom. This is the ship's HEIGHT axis\n" +
-				"- X axis: left/right. +X = starboard (right), -X = port (left). This is the ship's WIDTH axis\n" +
-				"- The CENTER of the X axis is the ship's spine/midline. Most ships should be symmetric about this axis\n\n" +
-				"BLOCK TYPES:\n" +
-				"- The `blocks` table contains all available block types as named constants\n" +
-				"- Access block IDs via blocks.NAME, e.g. blocks.HULL_BLACK, blocks.WEDGE_GREY, blocks.GLASS_WHITE\n" +
-				"- ALWAYS use blocks.NAME — NEVER use raw integer IDs or invent your own variable names for blocks\n" +
-				"- The available names are listed in the BLOCK PALETTE section of the user prompt\n\n" +
+				"- Coordinates are 0-indexed: x=[0, dims.x-1], y=[0, dims.y-1], z=[0, dims.z-1]\n" +
+				"- Z = length (nose=high Z, tail=low Z), Y = height (up=high Y), X = width (symmetry center = dims.x/2)\n\n" +
 				"ORIENTATION SYSTEM:\n" +
-				"- Use the `orient` table for all orientation values — NEVER use raw integer orientation values\n" +
-				"- Basic blocks (full cubes): orient.FRONT(+Z), orient.BACK(-Z), orient.TOP(+Y), orient.BOTTOM(-Y), orient.RIGHT(+X), orient.LEFT(-X)\n" +
-				"- Weapons should face orient.FRONT, thrusters should face orient.BACK\n\n" +
-				"SHAPE BLOCKS AND THEIR ORIENTATIONS — USE THESE EXTENSIVELY:\n" +
-				"- WEDGE: slope/ramp shape (half a cube cut diagonally). 12 orientations.\n" +
-				"  Named orient.wedge_{surface}_{slope_direction}: surface is where the slope is (top/bottom/side),\n" +
-				"  slope_direction is which way it descends (front/back/left/right).\n" +
-				"  Example: orient.wedge_top_front = slope on top surface descending toward front (+Z).\n" +
-				"  Use to taper edges and create angled surfaces instead of flat walls.\n" +
-				"- CORNER: triangular spike, 1/8 of a cube. 24 orientations.\n" +
-				"  Named orient.corner_{axis}_{dir1}_{dir2}: the point/spike is at that corner of the cube.\n" +
-				"  Example: orient.corner_top_front_right = spike pointing toward top-front-right corner.\n" +
-				"  Use at vertices and tips where two wedges meet.\n" +
-				"- TETRA: 1/4 pyramid. 8 orientations.\n" +
-				"  Named orient.tetra_{vertical}_{forward}_{lateral}: the point is at that corner.\n" +
-				"  Example: orient.tetra_top_front_right = pyramid point at top-front-right.\n" +
-				"  Use for sharp pointed tips like noses and wing tips.\n" +
-				"- HEPTA: 7/8 block (cube with one corner chamfered). 8 orientations.\n" +
-				"  Named orient.hepta_{vertical}_{forward}_{lateral}: the CUT corner is at that position.\n" +
-				"  Example: orient.hepta_top_front_right = corner chamfer at top-front-right.\n" +
-				"  Use for subtle chamfers and gentle transitions.\n" +
-				"- SLAB: half-height blocks. Use basic orient.TOP/BOTTOM/etc. for face direction.\n" +
-				"  Use for fine detailing and thin features.\n\n" +
-				"DESIGN PRINCIPLES - CRITICAL:\n" +
-				"- NEVER build a plain box or rectangular prism. Every design must have tapered, angled, or curved surfaces\n" +
-				"- Ships should taper toward the nose (+Z end) using wedges and corners to form a pointed or streamlined front\n" +
-				"- Ships should taper toward the rear (-Z end) around the engines\n" +
-				"- Use wedges along ALL edges where hull meets open space to eliminate boxy 90-degree corners\n" +
-				"- Vary the cross-section along the Z axis: narrower at front and back, wider in the middle\n" +
-				"- Use at least 2-3 different hull/armor colors or tiers to create visual contrast and panel lines\n" +
-				"- Add asymmetric or protruding features: wings, fins, nacelles, antenna masts, turret mounts\n" +
-				"- Sections should be hollow so users can fill them with system blocks\n\n" +
-				"BUILDING METHODOLOGY:\n" +
-				"1. SKELETON: Start by building the central spine/fuselage as a long shape tapered at both ends\n" +
-				"2. HULL: Add the main hull around the spine, varying width and height along the Z axis\n" +
-				"3. SHAPING: Replace all boxy edges with wedges, corners, and hepta blocks. This is the most important step\n" +
-				"4. FEATURES: Add wings, fins, nacelles, cockpit canopy, engine housings, weapon mounts\n" +
-				"5. DETAILING: Add panel lines using different hull tiers, accent lights, glass for cockpits\n" +
-				"6. CLEANUP: Clear any interior blocks for hollow sections, ensure symmetry on X axis\n\n" +
-				"COMMON PATTERNS:\n" +
-				"- Tapered nose: Use cone() with tip_radius=0 pointing along +Z, or build manually with tetra/wedge blocks\n" +
-				"- Fuselage: Use cylinder() or cone() for the main body, then detail with wedge/hepta blocks\n" +
-				"- Wing: A thin slab of hull extending on the X axis, with wedge leading/trailing edges\n" +
-				"- Engine nacelle: Use cylinder() with hollow=true, cap ends with ellipsoid() or cone()\n" +
-				"- Cockpit: ellipsoid() with glass blocks, cut in half with clear() for a canopy\n" +
-				"- Rounded hull: Use ellipsoid() for the overall shape, then carve details with clear() and fill()\n\n" +
-				"TECHNIQUE NOTES:\n" +
-				"- Use ellipsoid(), cylinder(), and cone() to create organic rounded shapes FIRST, then detail with block functions\n" +
-				"- Later calls overwrite earlier ones, so layer details on top of base shapes\n" +
-				"- Use mirror() to get perfect bilateral symmetry: build one side, then mirror across X\n" +
-				"- Combine shapes: e.g. cone() for nose + cylinder() for body + ellipsoid() for cockpit dome\n" +
-				"- Use Lua loops and math to create repeating patterns, gradual tapers, and complex geometry\n" +
-				"- Store block type IDs in local variables for readability";
+				"- Basic: orient.FRONT(+Z), orient.BACK(-Z), orient.TOP(+Y), orient.BOTTOM(-Y), orient.RIGHT(+X), orient.LEFT(-X)\n" +
+				"- Wedge (12): orient.wedge_{surface}_{direction} — e.g. orient.wedge_top_front\n" +
+				"- Corner (24): orient.corner_{axis}_{dir1}_{dir2} — e.g. orient.corner_top_front_right\n" +
+				"- Tetra (8): orient.tetra_{vert}_{fwd}_{lat} — e.g. orient.tetra_top_front_right\n" +
+				"- Hepta (8): orient.hepta_{vert}_{fwd}_{lat} — e.g. orient.hepta_top_front_right\n\n" +
+				"DESIGN PRINCIPLES:\n" +
+				"- Never build a plain box. Taper toward nose and tail. Use wedges on all edges where hull meets air.\n" +
+				"- Use shape primitives (cone, ellipsoid, cylinder) for the base form, then add detail.\n" +
+				"- Build one half, then mirror(\"X\") for symmetry. Later calls overwrite earlier ones.\n" +
+				"- Use at least 2-3 block colors/tiers for visual contrast.\n\n" +
+				"EXAMPLE — a small 16x8x32 fighter (adapt block names to match your palette):\n" +
+				"```lua\n" +
+				"set_name(\"example_fighter\")\n" +
+				"local mid = math.floor(dims.x / 2)\n\n" +
+				"-- Fuselage: tapered cone along Z axis\n" +
+				"cone(mid, 3, 0, mid, 3, dims.z - 1, 3, blocks.GREY_HULL, 1)\n\n" +
+				"-- Cockpit canopy\n" +
+				"ellipsoid(mid, 5, dims.z - 8, 2, 2, 3, blocks.GLASS)\n\n" +
+				"-- Wings: flat slabs on one side, then mirror\n" +
+				"fill(mid + 3, 3, 8, mid + 7, 3, 18, blocks.GREY_STANDARD_ARMOR)\n" +
+				"-- Wing leading edge wedges\n" +
+				"for x = mid + 3, mid + 7 do\n" +
+				"    place(x, 3, 18, blocks.GREY_STANDARD_ARMOR_WEDGE, orient.wedge_top_front)\n" +
+				"    place(x, 3, 8, blocks.GREY_STANDARD_ARMOR_WEDGE, orient.wedge_top_back)\n" +
+				"end\n\n" +
+				"-- Engine nacelle on one side\n" +
+				"cylinder(mid + 5, 3, 2, mid + 5, 3, 6, 1, blocks.BLACK_STANDARD_ARMOR, true)\n\n" +
+				"-- Mirror everything to the other side\n" +
+				"mirror(\"X\")\n\n" +
+				"-- Hollow out the interior\n" +
+				"hollow(0, 0, 0, dims.x - 1, dims.y - 1, dims.z - 1, 1)\n" +
+				"```\n\n" +
+				"Follow this pattern: direct primitive calls, no wrappers, no pseudo-code.";
 
 	static String buildUserPrompt(List<TemplateMetaData> references, int[] dims, String description, String palette) {
 		StringBuilder sb = new StringBuilder();
@@ -390,8 +409,9 @@ public class TemplateGenerator {
 			sb.append("DESCRIPTION: ").append(description).append("\n");
 		}
 
-		sb.append("\nAVAILABLE BLOCK PALETTE (access via blocks.NAME, e.g. blocks.HULL_BLACK):\n");
+		sb.append("\nAVAILABLE BLOCK PALETTE — use EXACTLY these names via blocks.NAME (e.g. blocks.GREY_HULL):\n");
 		sb.append(palette).append("\n");
+		sb.append("DO NOT invent block names. If a name is not listed above, it does not exist and will cause an error.\n");
 
 		if(references != null && !references.isEmpty()) {
 			sb.append("\nREFERENCE TEMPLATES (use as style/composition inspiration):\n");
@@ -405,10 +425,13 @@ public class TemplateGenerator {
 			}
 		}
 
-		sb.append("\nREMINDER: Do NOT build a plain box. Use wedge, corner, hepta, and tetra blocks from the palette ");
-		sb.append("to create tapered, angled surfaces. Every edge where hull meets air should use shape blocks. ");
-		sb.append("Start with the overall tapered shape, then add features and details.\n");
-		sb.append("Output ONLY a ```lua code block, no prose.");
+		sb.append("\nREMINDERS:\n");
+		sb.append("- Use ONLY block names from the palette above. Accessing a nonexistent name crashes the script.\n");
+		sb.append("- Call building primitives directly. No wrapper functions, no helper functions, no abstractions.\n");
+		sb.append("- Every line must do something. No pseudo-code, no TODOs, no placeholders.\n");
+		sb.append("- Lua syntax: use `and`/`or`/`not`, use `math.abs()`, NOT `&&`/`||`/`abs()`.\n");
+		sb.append("- Build with shape primitives first (cone, ellipsoid, cylinder), then add detail.\n");
+		sb.append("- Output ONLY a ```lua code block. No prose before or after.");
 		return sb.toString();
 	}
 
