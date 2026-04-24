@@ -92,6 +92,8 @@ public class GenerateTemplateCommand implements CommandInterface {
 					return true;
 				}
 				outputDims = new int[]{size.x, size.y, size.z};
+			} else {
+				outputDims = null; // AI will choose dimensions
 			}
 
 			Set<Short> hotbarTypes = useHotbar ? getHotbarBlockTypes(sender) : null;
