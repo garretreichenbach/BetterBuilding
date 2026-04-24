@@ -61,33 +61,38 @@ public class GenerateTemplateCommand implements CommandInterface {
 	public boolean onCommand(PlayerState sender, String[] args) {
 		try {
 			if(args.length < 1) {
-				PlayerUtils.sendMessage(sender, "Usage: /bb_generate <description> [\"ref1\",\"ref2\",...]");
-				return true;
-			}
-
-			Vector3i size = getBuildToolsManager().getSize();
-			if(size.x > TemplateGenerator.DEFAULT_MAX_DIM || size.y > TemplateGenerator.DEFAULT_MAX_DIM || size.z > TemplateGenerator.DEFAULT_MAX_DIM) {
-				PlayerUtils.sendMessage(sender, "Selection size exceeds maximum allowed dimensions of " +
-						TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + ".");
-				return true;
-			}
-
-			if(size.x <= 1 || size.y <= 1 || size.z <= 1) {
-				PlayerUtils.sendMessage(sender, "Selection size must be at least 2x2x2.");
+				PlayerUtils.sendMessage(sender, "Usage: /bb_generate <description> [\"ref1\",\"ref2\",...] [-hotbar] [-size]");
 				return true;
 			}
 
 			String description = args[0].replaceAll("^\"|\"$", "").trim();
 			List<TemplateMetaData> references = new ArrayList<>();
 			boolean useHotbar = false;
+			boolean useSelectionSize = false;
 			for(int i = 1; i < args.length; i++) {
 				if("-hotbar".equalsIgnoreCase(args[i])) {
 					useHotbar = true;
+				} else if("-size".equalsIgnoreCase(args[i])) {
+					useSelectionSize = true;
 				} else {
 					references.addAll(getTemplates(parseNames(args[i])));
 				}
 			}
-			int[] outputDims = {size.x, size.y, size.z};
+
+			final int[] outputDims;
+			if(useSelectionSize) {
+				Vector3i size = getBuildToolsManager().getSize();
+				if(size.x > TemplateGenerator.DEFAULT_MAX_DIM || size.y > TemplateGenerator.DEFAULT_MAX_DIM || size.z > TemplateGenerator.DEFAULT_MAX_DIM) {
+					PlayerUtils.sendMessage(sender, "Selection size exceeds maximum allowed dimensions of " +
+							TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + "x" + TemplateGenerator.DEFAULT_MAX_DIM + ".");
+					return true;
+				}
+				if(size.x <= 1 || size.y <= 1 || size.z <= 1) {
+					PlayerUtils.sendMessage(sender, "Selection size must be at least 2x2x2.");
+					return true;
+				}
+				outputDims = new int[]{size.x, size.y, size.z};
+			}
 
 			Set<Short> hotbarTypes = useHotbar ? getHotbarBlockTypes(sender) : null;
 			if(useHotbar && hotbarTypes.isEmpty()) {
