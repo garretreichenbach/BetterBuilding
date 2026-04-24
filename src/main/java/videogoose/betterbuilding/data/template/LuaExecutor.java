@@ -73,12 +73,27 @@ public class LuaExecutor {
 		// Expose named orientation constants
 		globals.set("orient", buildOrientTable());
 
-		// Expose block palette as named constants
+		// Expose block palette as named constants with error on unknown keys
 		if(palette != null) {
-			LuaTable blocksTable = new LuaTable();
+			final LuaTable blocksTable = new LuaTable();
+			final StringBuilder availableNames = new StringBuilder();
+			boolean first = true;
 			for(Map.Entry<String, Short> entry : palette.entrySet()) {
-				blocksTable.set(entry.getKey(), entry.getValue().intValue());
+				blocksTable.rawset(entry.getKey(), LuaValue.valueOf(entry.getValue().intValue()));
+				if(!first) availableNames.append(", ");
+				availableNames.append(entry.getKey());
+				first = false;
 			}
+			// Set a metatable with __index that throws a clear error on unknown keys
+			LuaTable meta = new LuaTable();
+			final String names = availableNames.toString();
+			meta.set("__index", new TwoArgFunction() {
+				public LuaValue call(LuaValue table, LuaValue key) {
+					throw new LuaError("Unknown block name: blocks." + key.tojstring() +
+							". Use ONLY names from the palette. Available: " + names);
+				}
+			});
+			blocksTable.setmetatable(meta);
 			globals.set("blocks", blocksTable);
 		}
 
