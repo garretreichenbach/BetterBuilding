@@ -67,6 +67,45 @@ public class BlockPalette {
 		return sb.toString();
 	}
 
+	/**
+	 * Build the default palette as a name-to-ID map for use as Lua globals.
+	 */
+	public static Map<String, Short> toPaletteMap() {
+		Map<String, Short> map = new LinkedHashMap<>();
+		for(Blocks block : Blocks.values()) {
+			if(block == Blocks.EMPTY_SPACE) continue;
+			if(!block.getInfo().isShoppable() || !block.getInfo().isInRecipe() || block.getInfo().isDeprecated()) continue;
+			if(!isRelevant(block.name())) continue;
+			map.put(block.name(), block.getId());
+		}
+		return map;
+	}
+
+	/**
+	 * Build a hotbar palette as a name-to-ID map for use as Lua globals.
+	 */
+	public static Map<String, Short> toHotbarPaletteMap(Set<Short> hotbarTypes) {
+		Set<Short> expanded = new LinkedHashSet<>();
+		for(short type : hotbarTypes) {
+			if(!ElementKeyMap.isValidType(type)) continue;
+			expanded.add(type);
+			ElementInformation info = ElementKeyMap.getInfo(type);
+			if(info.styleIds != null) {
+				for(short id : info.styleIds) expanded.add(id);
+			}
+			if(info.slabIds != null) {
+				for(short id : info.slabIds) expanded.add(id);
+			}
+		}
+
+		Map<String, Short> map = new LinkedHashMap<>();
+		for(short type : expanded) {
+			if(!ElementKeyMap.isValidType(type)) continue;
+			map.put(getName(type), type);
+		}
+		return map;
+	}
+
 	private static boolean isRelevant(String name) {
 		for(String category : PALETTE_CATEGORIES) {
 			if(name.contains(category)) return true;

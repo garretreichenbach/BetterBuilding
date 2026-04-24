@@ -7,6 +7,7 @@ import videogoose.betterbuilding.manager.ConfigManager;
 import videogoose.betterbuilding.manager.AIClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,13 +70,14 @@ public class TemplateGenerator {
 
 		AIClient client = new AIClient(url, model, temperature, maxTokens, timeout, apiKey);
 
-		String palette = (hotbarTypes != null && !hotbarTypes.isEmpty())
-				? BlockPalette.toHotbarPaletteString(hotbarTypes)
-				: BlockPalette.toJsonPaletteString();
+		Map<String, Short> paletteMap = (hotbarTypes != null && !hotbarTypes.isEmpty())
+				? BlockPalette.toHotbarPaletteMap(hotbarTypes)
+				: BlockPalette.toPaletteMap();
+		String paletteString = palettMapToString(paletteMap);
 
 		JsonArray messages = new JsonArray();
 		messages.add(makeMessage("system", buildSystemPrompt()));
-		messages.add(makeMessage("user", buildUserPrompt(references, outputDims, description, palette)));
+		messages.add(makeMessage("user", buildUserPrompt(references, outputDims, description, paletteString)));
 
 		BetterBuilding.getInstance().logInfo("Requesting Lua build script via " + providerName + "...");
 
@@ -103,12 +105,14 @@ public class TemplateGenerator {
 			}
 
 			template = new TemplateMetaData("ai_generated", outputDims);
-			LuaExecutor executor = new LuaExecutor(template, outputDims);
+			LuaExecutor executor = new LuaExecutor(template, outputDims, paletteMap);
 
 			try {
 				executor.execute(luaCode);
 			} catch(Exception e) {
 				lastError = e.getMessage();
+				BetterBuilding.getInstance().logWarning("Lua script error (attempt " + (attempt + 1) + "): " + lastError);
+				BetterBuilding.getInstance().logWarning("Failed script:\n" + luaCode);
 				template = null;
 				continue;
 			}
@@ -175,6 +179,18 @@ public class TemplateGenerator {
 		return null;
 	}
 
+	private static String palettMapToString(Map<String, Short> map) {
+		StringBuilder sb = new StringBuilder("{");
+		boolean first = true;
+		for(Map.Entry<String, Short> entry : map.entrySet()) {
+			if(!first) sb.append(",");
+			sb.append("\"").append(entry.getKey()).append("\":").append(entry.getValue());
+			first = false;
+		}
+		sb.append("}");
+		return sb.toString();
+	}
+
 	private static void validateDimensions(int[] dims) {
 		if(dims == null || dims.length != 3) throw new IllegalArgumentException("outputDims must be length 3");
 		for(int d : dims) {
@@ -203,6 +219,7 @@ public class TemplateGenerator {
 		sb.append("environment with the following building functions and globals available.\n\n");
 		sb.append("### Globals\n");
 		sb.append("- `dims.x`, `dims.y`, `dims.z` — the template dimensions\n");
+		sb.append("- `blocks` — table of block type IDs by name (e.g. blocks.HULL_BLACK, blocks.WEDGE_GREY)\n");
 		sb.append("- `orient` — table of named orientation constants (see ORIENTATION SYSTEM above)\n");
 		sb.append("  Basic: orient.FRONT, orient.BACK, orient.TOP, orient.BOTTOM, orient.RIGHT, orient.LEFT\n");
 		sb.append("  Wedge: orient.wedge_top_front, orient.wedge_top_right, orient.wedge_top_back, orient.wedge_top_left,\n");
@@ -303,8 +320,10 @@ public class TemplateGenerator {
 				"- X axis: left/right. +X = starboard (right), -X = port (left). This is the ship's WIDTH axis\n" +
 				"- The CENTER of the X axis is the ship's spine/midline. Most ships should be symmetric about this axis\n\n" +
 				"BLOCK TYPES:\n" +
-				"- block_type values are integer IDs from the provided block palette\n" +
-				"- Store block type IDs in local variables for readability\n\n" +
+				"- The `blocks` table contains all available block types as named constants\n" +
+				"- Access block IDs via blocks.NAME, e.g. blocks.HULL_BLACK, blocks.WEDGE_GREY, blocks.GLASS_WHITE\n" +
+				"- ALWAYS use blocks.NAME — NEVER use raw integer IDs or invent your own variable names for blocks\n" +
+				"- The available names are listed in the BLOCK PALETTE section of the user prompt\n\n" +
 				"ORIENTATION SYSTEM:\n" +
 				"- Use the `orient` table for all orientation values — NEVER use raw integer orientation values\n" +
 				"- Basic blocks (full cubes): orient.FRONT(+Z), orient.BACK(-Z), orient.TOP(+Y), orient.BOTTOM(-Y), orient.RIGHT(+X), orient.LEFT(-X)\n" +
@@ -371,7 +390,7 @@ public class TemplateGenerator {
 			sb.append("DESCRIPTION: ").append(description).append("\n");
 		}
 
-		sb.append("\nAVAILABLE BLOCK PALETTE (ONLY use block_type IDs from this list):\n");
+		sb.append("\nAVAILABLE BLOCK PALETTE (access via blocks.NAME, e.g. blocks.HULL_BLACK):\n");
 		sb.append(palette).append("\n");
 
 		if(references != null && !references.isEmpty()) {

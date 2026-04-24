@@ -4,6 +4,7 @@ import org.luaj.vm2.*;
 import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.JsePlatform;
 
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -14,12 +15,14 @@ public class LuaExecutor {
 
 	private final TemplateMetaData template;
 	private final int[] dims;
+	private final Map<String, Short> palette;
 	private int totalOps;
 	private String templateName;
 
-	public LuaExecutor(TemplateMetaData template, int[] dims) {
+	public LuaExecutor(TemplateMetaData template, int[] dims, Map<String, Short> palette) {
 		this.template = template;
 		this.dims = dims;
+		this.palette = palette;
 		this.totalOps = 0;
 		this.templateName = null;
 	}
@@ -69,6 +72,15 @@ public class LuaExecutor {
 
 		// Expose named orientation constants
 		globals.set("orient", buildOrientTable());
+
+		// Expose block palette as named constants
+		if(palette != null) {
+			LuaTable blocksTable = new LuaTable();
+			for(Map.Entry<String, Short> entry : palette.entrySet()) {
+				blocksTable.set(entry.getKey(), entry.getValue().intValue());
+			}
+			globals.set("blocks", blocksTable);
+		}
 
 		// Building primitives
 		globals.set("fill", new VarArgFunction() {
