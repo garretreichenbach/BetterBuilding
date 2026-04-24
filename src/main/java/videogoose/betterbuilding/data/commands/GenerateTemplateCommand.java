@@ -44,10 +44,12 @@ public class GenerateTemplateCommand implements CommandInterface {
 
 	@Override
 	public String getDescription() {
-		return "Generates a building template using AI based on your description and the size of your current selection.\n" +
-				"Usage: /bb_generate <description> [\"ref_template_1\",\"ref_template_2\",...] [-hotbar]\n" +
+		return "Generates a building template using AI based on your description.\n" +
+				"Usage: /bb_generate <description> [\"ref_template_1\",\"ref_template_2\",...] [-hotbar] [-size]\n" +
 				"  -hotbar: Restrict AI to only use blocks from your current hotbar\n" +
-				"Example: /bb_generate \"small fighter ship\" -hotbar";
+				"  -size: Use current build selection size (otherwise AI chooses dimensions)\n" +
+				"Example: /bb_generate \"small fighter ship\"\n" +
+				"Example: /bb_generate \"large carrier\" -size -hotbar";
 	}
 
 	@Override
