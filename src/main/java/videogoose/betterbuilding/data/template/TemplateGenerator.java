@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import videogoose.betterbuilding.BetterBuilding;
 import videogoose.betterbuilding.manager.ConfigManager;
-import videogoose.betterbuilding.manager.LMStudioClient;
+import videogoose.betterbuilding.manager.AIClient;
 
 import java.util.List;
 import java.util.Set;
@@ -67,7 +67,7 @@ public class TemplateGenerator {
 				break;
 		}
 
-		LMStudioClient client = new LMStudioClient(url, model, temperature, maxTokens, timeout, apiKey);
+		AIClient client = new AIClient(url, model, temperature, maxTokens, timeout, apiKey);
 
 		String palette = (hotbarTypes != null && !hotbarTypes.isEmpty())
 				? BlockPalette.toHotbarPaletteString(hotbarTypes)
@@ -271,6 +271,21 @@ public class TemplateGenerator {
 		sb.append("- `set_name(name)` — set the template name (snake_case recommended).\n\n");
 		sb.append("- `noise(from_x, from_y, from_z, to_x, to_y, to_z, block_type, density [, seed [, orientation]])`\n");
 		sb.append("    Scatter blocks randomly in a region. density is 0.0 to 1.0. Optional integer seed for reproducibility.\n\n");
+		sb.append("- `hollow(from_x, from_y, from_z, to_x, to_y, to_z [, thickness])`\n");
+		sb.append("    Carve out the interior of existing geometry, leaving walls of the given thickness (default 1).\n");
+		sb.append("    Unlike shell() which builds a shell, this removes the inside of already-placed blocks.\n\n");
+		sb.append("- `gradient(from_x, from_y, from_z, to_x, to_y, to_z, type_a, type_b [, axis [, orientation]])`\n");
+		sb.append("    Fill a region transitioning from type_a to type_b along an axis (default \"Z\").\n");
+		sb.append("    First half uses type_a, second half uses type_b. Use for color transitions across hull panels.\n\n");
+		sb.append("- `scatter_surface(from_x, from_y, from_z, to_x, to_y, to_z, block_type, density [, seed [, orientation]])`\n");
+		sb.append("    Place blocks randomly on exposed surfaces of existing geometry (air blocks adjacent to solids).\n");
+		sb.append("    density is 0.0 to 1.0. Use for greebles, surface detail nubs, antenna arrays.\n\n");
+		sb.append("- `extrude(from_x, from_z, to_x, to_z, src_y, height, block_type [, orientation [, copy_existing]])`\n");
+		sb.append("    Extrude upward (or downward if height is negative) from a Y level.\n");
+		sb.append("    If copy_existing=true, copies the block types found at src_y instead of using block_type.\n\n");
+		sb.append("- `flood_fill(x, y, z, block_type [, orientation [, max_blocks]])`\n");
+		sb.append("    Fill connected air space starting from a point. Stops at solid blocks and bounds.\n");
+		sb.append("    max_blocks limits the fill (default 100000) to prevent runaway fills on open spaces.\n\n");
 
 		sb.append("### Output Format\n");
 		sb.append("Your ENTIRE response must be a single Lua code block wrapped in ```lua ... ``` fences.\n");

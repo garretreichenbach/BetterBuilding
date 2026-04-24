@@ -1,7 +1,6 @@
 package videogoose.betterbuilding.manager;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -14,7 +13,7 @@ import java.nio.charset.StandardCharsets;
  * HTTP client for communicating with LM Studio / Ollama OpenAI-compatible API.
  * Supports both simple chat completions and tool-calling conversations.
  */
-public class LMStudioClient {
+public class AIClient {
 
 	private final String baseUrl;
 	private final String model;
@@ -23,11 +22,11 @@ public class LMStudioClient {
 	private final int timeoutMs;
 	private final String apiKey;
 
-	public LMStudioClient(String baseUrl, String model, float temperature, int maxTokens, int timeoutMs) {
+	public AIClient(String baseUrl, String model, float temperature, int maxTokens, int timeoutMs) {
 		this(baseUrl, model, temperature, maxTokens, timeoutMs, null);
 	}
 
-	public LMStudioClient(String baseUrl, String model, float temperature, int maxTokens, int timeoutMs, String apiKey) {
+	public AIClient(String baseUrl, String model, float temperature, int maxTokens, int timeoutMs, String apiKey) {
 		this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
 		this.model = model;
 		this.temperature = temperature;

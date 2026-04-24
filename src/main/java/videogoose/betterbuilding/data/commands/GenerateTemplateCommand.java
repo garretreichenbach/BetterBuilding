@@ -87,8 +87,8 @@ public class GenerateTemplateCommand implements CommandInterface {
 			}
 			int[] outputDims = {size.x, size.y, size.z};
 
-			final Set<Short> hotbarTypes = useHotbar ? getHotbarBlockTypes(sender) : null;
-			if(useHotbar && (hotbarTypes == null || hotbarTypes.isEmpty())) {
+			Set<Short> hotbarTypes = useHotbar ? getHotbarBlockTypes(sender) : null;
+			if(useHotbar && hotbarTypes.isEmpty()) {
 				PlayerUtils.sendMessage(sender, "No blocks found in hotbar.");
 				return true;
 			}

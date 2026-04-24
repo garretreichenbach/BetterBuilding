@@ -660,6 +660,211 @@ public class LuaExecutor {
 			}
 		});
 
+		// --- Advanced utility primitives ---
+
+		globals.set("hollow", new VarArgFunction() {
+			public Varargs invoke(Varargs args) {
+				int fx = args.checkint(1), fy = args.checkint(2), fz = args.checkint(3);
+				int tx = args.checkint(4), ty = args.checkint(5), tz = args.checkint(6);
+				int thickness = args.narg() >= 7 ? args.optint(7, 1) : 1;
+
+				int minX = Math.min(fx, tx), maxX = Math.max(fx, tx);
+				int minY = Math.min(fy, ty), maxY = Math.max(fy, ty);
+				int minZ = Math.min(fz, tz), maxZ = Math.max(fz, tz);
+
+				// For each solid block, check if it's far enough from any air/boundary
+				// to be considered interior. If so, remove it.
+				int count = 0;
+				for(int x = minX; x <= maxX; x++)
+					for(int y = minY; y <= maxY; y++)
+						for(int z = minZ; z <= maxZ; z++) {
+							if(!inBounds(x, y, z)) continue;
+							if(template.getTypeAt(x, y, z) == 0) continue;
+							// Check distance to nearest air or boundary in all 6 directions
+							boolean isInterior = true;
+							int[][] dirs = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+							for(int[] d : dirs) {
+								boolean foundSurface = false;
+								for(int step = 1; step <= thickness; step++) {
+									int nx = x + d[0] * step, ny = y + d[1] * step, nz = z + d[2] * step;
+									if(!inBounds(nx, ny, nz) || template.getTypeAt(nx, ny, nz) == 0) {
+										foundSurface = true;
+										break;
+									}
+								}
+								if(foundSurface) {
+									isInterior = false;
+									break;
+								}
+							}
+							if(isInterior) {
+								template.setTypeAt(x, y, z, (short) 0);
+								template.setOrientationAt(x, y, z, (byte) 0);
+								count++;
+							}
+						}
+				totalOps++;
+				return LuaValue.valueOf(count);
+			}
+		});
+
+		globals.set("gradient", new VarArgFunction() {
+			public Varargs invoke(Varargs args) {
+				int fx = args.checkint(1), fy = args.checkint(2), fz = args.checkint(3);
+				int tx = args.checkint(4), ty = args.checkint(5), tz = args.checkint(6);
+				short typeA = (short) args.checkint(7);
+				short typeB = (short) args.checkint(8);
+				String axis = args.narg() >= 9 ? args.optjstring(9, "Z").toUpperCase() : "Z";
+				byte orient = args.narg() >= 10 ? (byte) args.optint(10, 0) : 0;
+
+				int minX = Math.min(fx, tx), maxX = Math.max(fx, tx);
+				int minY = Math.min(fy, ty), maxY = Math.max(fy, ty);
+				int minZ = Math.min(fz, tz), maxZ = Math.max(fz, tz);
+
+				int count = 0;
+				for(int x = minX; x <= maxX; x++)
+					for(int y = minY; y <= maxY; y++)
+						for(int z = minZ; z <= maxZ; z++) {
+							if(!inBounds(x, y, z)) continue;
+							double frac;
+							switch(axis) {
+								case "X": frac = maxX > minX ? (double)(x - minX) / (maxX - minX) : 0; break;
+								case "Y": frac = maxY > minY ? (double)(y - minY) / (maxY - minY) : 0; break;
+								default:  frac = maxZ > minZ ? (double)(z - minZ) / (maxZ - minZ) : 0; break;
+							}
+							short type = frac < 0.5 ? typeA : typeB;
+							template.setTypeAt(x, y, z, type);
+							template.setOrientationAt(x, y, z, orient);
+							count++;
+						}
+				totalOps++;
+				return LuaValue.valueOf(count);
+			}
+		});
+
+		globals.set("scatter_surface", new VarArgFunction() {
+			public Varargs invoke(Varargs args) {
+				int fx = args.checkint(1), fy = args.checkint(2), fz = args.checkint(3);
+				int tx = args.checkint(4), ty = args.checkint(5), tz = args.checkint(6);
+				short type = (short) args.checkint(7);
+				double density = args.checkdouble(8);
+				long seed = args.narg() >= 9 ? (long) args.optint(9, 0) : 0;
+				byte orient = args.narg() >= 10 ? (byte) args.optint(10, 0) : 0;
+
+				int minX = Math.min(fx, tx), maxX = Math.max(fx, tx);
+				int minY = Math.min(fy, ty), maxY = Math.max(fy, ty);
+				int minZ = Math.min(fz, tz), maxZ = Math.max(fz, tz);
+
+				Random rng = seed != 0 ? new Random(seed) : new Random();
+				int[][] dirs = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+				int count = 0;
+				for(int x = minX; x <= maxX; x++)
+					for(int y = minY; y <= maxY; y++)
+						for(int z = minZ; z <= maxZ; z++) {
+							if(!inBounds(x, y, z)) continue;
+							if(template.getTypeAt(x, y, z) != 0) continue; // must be air
+							// Check if adjacent to any solid block
+							boolean onSurface = false;
+							for(int[] d : dirs) {
+								int nx = x + d[0], ny = y + d[1], nz = z + d[2];
+								if(inBounds(nx, ny, nz) && template.getTypeAt(nx, ny, nz) != 0) {
+									onSurface = true;
+									break;
+								}
+							}
+							if(onSurface && rng.nextDouble() < density) {
+								template.setTypeAt(x, y, z, type);
+								template.setOrientationAt(x, y, z, orient);
+								count++;
+							}
+						}
+				totalOps++;
+				return LuaValue.valueOf(count);
+			}
+		});
+
+		globals.set("extrude", new VarArgFunction() {
+			public Varargs invoke(Varargs args) {
+				int fx = args.checkint(1), fz = args.checkint(2);
+				int tx = args.checkint(3), tz = args.checkint(4);
+				int srcY = args.checkint(5);
+				int height = args.checkint(6);
+				short type = (short) args.checkint(7);
+				byte orient = args.narg() >= 8 ? (byte) args.optint(8, 0) : 0;
+				boolean copyExisting = args.narg() >= 9 && args.optboolean(9, false);
+
+				int minX = Math.min(fx, tx), maxX = Math.max(fx, tx);
+				int minZ = Math.min(fz, tz), maxZ = Math.max(fz, tz);
+				int dir = height >= 0 ? 1 : -1;
+				int absH = Math.abs(height);
+
+				int count = 0;
+				for(int x = minX; x <= maxX; x++)
+					for(int z = minZ; z <= maxZ; z++) {
+						// Check if source position has a block (or use provided type)
+						short srcType;
+						byte srcOrient;
+						if(copyExisting && inBounds(x, srcY, z) && template.getTypeAt(x, srcY, z) != 0) {
+							srcType = template.getTypeAt(x, srcY, z);
+							srcOrient = template.getOrientationAt(x, srcY, z);
+						} else if(copyExisting) {
+							continue; // skip air positions when copying existing
+						} else {
+							srcType = type;
+							srcOrient = orient;
+						}
+						for(int step = 1; step <= absH; step++) {
+							int y = srcY + step * dir;
+							if(!inBounds(x, y, z)) break;
+							template.setTypeAt(x, y, z, srcType);
+							template.setOrientationAt(x, y, z, srcOrient);
+							count++;
+						}
+					}
+				totalOps++;
+				return LuaValue.valueOf(count);
+			}
+		});
+
+		globals.set("flood_fill", new VarArgFunction() {
+			public Varargs invoke(Varargs args) {
+				int sx = args.checkint(1), sy = args.checkint(2), sz = args.checkint(3);
+				short type = (short) args.checkint(4);
+				byte orient = args.narg() >= 5 ? (byte) args.optint(5, 0) : 0;
+				int maxBlocks = args.narg() >= 6 ? args.optint(6, 100000) : 100000;
+
+				if(!inBounds(sx, sy, sz)) return LuaValue.valueOf(0);
+				if(template.getTypeAt(sx, sy, sz) != 0) return LuaValue.valueOf(0);
+
+				java.util.Queue<int[]> queue = new java.util.LinkedList<int[]>();
+				java.util.Set<Long> visited = new java.util.HashSet<Long>();
+				queue.add(new int[]{sx, sy, sz});
+				visited.add(packCoord(sx, sy, sz));
+
+				int[][] dirs = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+				int count = 0;
+				while(!queue.isEmpty() && count < maxBlocks) {
+					int[] pos = queue.poll();
+					int x = pos[0], y = pos[1], z = pos[2];
+					template.setTypeAt(x, y, z, type);
+					template.setOrientationAt(x, y, z, orient);
+					count++;
+
+					for(int[] d : dirs) {
+						int nx = x + d[0], ny = y + d[1], nz = z + d[2];
+						if(!inBounds(nx, ny, nz)) continue;
+						if(template.getTypeAt(nx, ny, nz) != 0) continue;
+						long key = packCoord(nx, ny, nz);
+						if(visited.contains(key)) continue;
+						visited.add(key);
+						queue.add(new int[]{nx, ny, nz});
+					}
+				}
+				totalOps++;
+				return LuaValue.valueOf(count);
+			}
+		});
+
 		// --- Shaping primitives ---
 
 		globals.set("smooth", new VarArgFunction() {
@@ -1054,6 +1259,10 @@ public class LuaExecutor {
 
 	private boolean inBounds(int x, int y, int z) {
 		return x >= 0 && x < dims[0] && y >= 0 && y < dims[1] && z >= 0 && z < dims[2];
+	}
+
+	private static long packCoord(int x, int y, int z) {
+		return ((long) x & 0xFFFFF) | (((long) y & 0xFFFFF) << 20) | (((long) z & 0xFFFFF) << 40);
 	}
 
 	/** Find the most common non-air block type along a column. */
