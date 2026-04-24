@@ -194,6 +194,47 @@ public class TemplateGenerator {
 	}
 
 	/**
+	 * Ask the AI to choose appropriate dimensions for the build.
+	 * Returns [x, y, z] dimensions. Falls back to a default if parsing fails.
+	 */
+	private static int[] chooseDimensions(AIClient client, String description) throws Exception {
+		JsonArray messages = new JsonArray();
+		messages.add(makeMessage("system",
+				"You choose dimensions for StarMade voxel templates. " +
+						"Given a description, respond with ONLY three integers: width height length (X Y Z), space-separated.\n" +
+						"X = width (left/right), Y = height (up/down), Z = length (front/back).\n" +
+						"Guidelines: fighters 10-20, corvettes 15-30, frigates 20-40, capital ships 40-64. Max 64 per axis.\n" +
+						"Ships are usually longer (Z) than wide (X) and taller (Y). Stations can be more cubic.\n" +
+						"Respond with ONLY the three numbers, nothing else. Example: 12 8 24"));
+		messages.add(makeMessage("user", description));
+
+		for(int attempt = 0; attempt < 3; attempt++) {
+			JsonObject response = client.chatCompletionWithTools(messages, null);
+			String content = response.has("content") && !response.get("content").isJsonNull()
+					? response.get("content").getAsString().trim()
+					: "";
+
+			// Parse three integers from the response
+			String[] parts = content.replaceAll("[^0-9 ]", " ").trim().split("\\s+");
+			if(parts.length >= 3) {
+				try {
+					int x = Math.max(2, Math.min(DEFAULT_MAX_DIM, Integer.parseInt(parts[0])));
+					int y = Math.max(2, Math.min(DEFAULT_MAX_DIM, Integer.parseInt(parts[1])));
+					int z = Math.max(2, Math.min(DEFAULT_MAX_DIM, Integer.parseInt(parts[2])));
+					return new int[]{x, y, z};
+				} catch(NumberFormatException ignored) {}
+			}
+
+			messages.add(response);
+			messages.add(makeMessage("user", "Invalid response. Reply with ONLY three integers: width height length. Example: 12 8 24"));
+		}
+
+		// Fallback: reasonable default
+		BetterBuilding.getInstance().logWarning("AI failed to choose dimensions, using default 16x10x24");
+		return new int[]{16, 10, 24};
+	}
+
+	/**
 	 * Extract Lua code from the LLM response.
 	 * Tries ```lua fences first, then generic ``` fences, then the raw content.
 	 */
