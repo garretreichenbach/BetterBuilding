@@ -106,7 +106,12 @@ public class GenerateTemplateCommand implements CommandInterface {
 
 			new Thread(() -> {
 				try {
-					TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description, hotbarTypes);
+					TemplateGenerator.StatusCallback statusCallback = new TemplateGenerator.StatusCallback() {
+						public void onStatus(String message) {
+							PlayerUtils.sendMessage(sender, "[BetterBuilding] " + message);
+						}
+					};
+					TemplateMetaData generated = TemplateGenerator.generate(references, outputDims, description, hotbarTypes, statusCallback);
 					CopyArea copyArea = generated.toRawTemplate();
 					copyArea.save(generated.getName());
 					BuildToolsManager btm = getBuildToolsManager();
