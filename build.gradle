@@ -3,14 +3,11 @@ plugins {
     id 'application'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
 def starmadeDirectory = project.property("starmade_root")
 def modName = project.property("mod_name")
 group = project.property('mod_org_id')
 version = project.property('mod_version')
-mainClassName = group + modName
+def mainClassName = group + modName
 
 repositories {
     mavenCentral()
