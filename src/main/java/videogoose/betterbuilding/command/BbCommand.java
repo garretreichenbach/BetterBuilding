@@ -26,6 +26,7 @@ public class BbCommand implements CommandInterface {
 		register(new CaptureSub());
 		register(new ReskinSub());
 		register(new InspectSub());
+		register(new PaletteSub());
 		register(new ReloadSub());
 		register(new ComposeSub());
 	}
