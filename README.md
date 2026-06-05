@@ -41,7 +41,7 @@ The Architect's vocabulary maps cleanly onto StarMade once you swap "house" for 
 
 ## The Composer Workflow
 
-A single guided flow, each phase non-destructive and re-editable. Bind a key (default proposed: `B`) or run `/bb compose` to open it.
+A single guided flow, each phase non-destructive and re-editable. Press the composer key (default `-`, the only convenient key StarMade leaves unbound — rebindable via `composer_key` in `moddata/BetterBuilding/settings.yml`) or run `/bb compose` to open it.
 
 1. **Pick a structure archetype** — Station, Ship, Outpost, or Derelict. Archetype sets sensible defaults (gravity orientation, whether systems/power get stubbed in, scale).
 2. **Footprint** — Sketch the deck outline in build mode (drag a region or trace cells on a grid). Symmetry and mirroring toggles keep it clean.

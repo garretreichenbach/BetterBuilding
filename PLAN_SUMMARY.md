@@ -183,7 +183,7 @@ All verified against the StarMade source at `/Users/garret/Documents/GitHub/Star
 | Mod entry               | `api.mod.StarMod` (`onEnable`)                                                     | `BetterBuilding.java` — already extended                   |
 | Command registration    | `api.utils.game.chat.CommandInterface`, `StarLoader.getCommand` / registration     | `command/` — `/bb compose`, `/bb author`, `/bb reload`, `/bb capture`, `/bb reskin` |
 | Event listener reg.     | `StarLoader.registerListener`                                                      | `BetterBuilding.onEnable`                                  |
-| Keybind / input         | `api.listener.events.input.KeyPressEvent`                                          | Open composer (default key `B`); footprint cell sketching  |
+| Keybind / input         | `api.listener.events.input.KeyPressEvent`                                          | Open composer (default key `-` / MINUS); footprint cell sketching  |
 | Mouse input             | `api.listener.events.input.MousePressEvent`                                        | Footprint sketching                                        |
 | GUI panels              | `api.utils.gui.GUIMenuPanel`                                                       | Main composer panels                                       |
 | GUI input dialog        | `api.utils.gui.GUIInputDialog`                                                     | Authoring dialogs                                          |
