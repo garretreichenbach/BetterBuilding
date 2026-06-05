@@ -1,130 +1,108 @@
-# BetterBuilding — Progress / Resume Doc
+# BetterBuilding — AI Ship Generator (fresh start)
 
-A working checkpoint of what's built, how it works, what's verified, and where to pick up.
-Companion to [PLAN_SUMMARY.md](../PLAN_SUMMARY.md) (the authoritative spec) and [README.md](../README.md) (the vision).
+Resume doc for the rebuilt project: a description → StarMade ship/template generator,
+adapting minebench's `voxel.exec` pattern (LLM writes code calling building
+primitives, sandboxed, with a quality-gated repair loop). Runtime model:
+**Qwen3-VL-30B-A3B**, local via **LM Studio** on a separate Windows PC.
 
-_Last updated: M0 + M1 complete and in-game verified; M2 in progress (palette editor GUI)._
+> **See [`PLAN.md`](./PLAN.md) for the authoritative design + roadmap + rationale.**
+> This file is live status only.
 
----
-
-## TL;DR status
-
-| Milestone | State |
-|-----------|-------|
-| **M0 — Foundation** | ✅ Done, verified in-game (capture round-trips) |
-| **M1 — Palettes & slots** | ✅ Done, verified in-game (shape-aware reskin works) |
-| **M2 — Styles & content format** | 🟡 In progress — palette editor GUI built (testing); StyleLoader / authoring / reference pack not started |
-| M3–M5 | Not started |
-
-Committed baseline: `3a9482a "M0-1 done"`. The M2 palette-editor work (gui/, PaletteWriter, PaletteSub, inspect) is **uncommitted** on `main` at time of writing.
+_Last updated: Phase 0 foundation slice written + compiles; awaiting in-game paste test._
 
 ---
 
-## How to build / run
+## The plan (phases)
 
-- `./gradlew jar` → writes `BetterBuildingv2.0.0.jar` into `<starmade>/mods/`.
-- StarMade root (build + runtime): `C:/Users/garre/OneDrive/Game Files/StarMade Files/Dev Build/` (set via `starmade_root` in `gradle.properties`).
-- StarMade **API source** (for looking up signatures): `C:/Users/garre/OneDrive/Projects/StarMade-Master/src/main/java` (and `src/precompiled/java`). NOTE: the macOS path in README/PLAN is wrong for this machine.
-- Content + config live under `<starmade>/moddata/BetterBuilding/` (see below). Reload the jar in-game (Mods menu) after a rebuild; palette JSON edits are read fresh per command (no reload needed).
+| Phase | Goal | State |
+|-------|------|-------|
+| **0 — Foundation** | Prove the output path: code-built `VoxelTemplate` → `CopyArea` → `.smtpl` → paste, with correct geometry/orientation in-game. | 🟡 written, compiles; needs in-game test |
+| 1 — Captioned corpus | Render the 500–5000 blueprint corpus, caption locally with the VLM → searchable (caption ↔ ship) index. | ⬜ |
+| 2 — RAG generation | Retrieval-augmented single-shot Lua generation + render→critique→repair loop + quality gates. | ⬜ |
+| 3 — Custom model (deferred) | QLoRA distill only if Phase 2 proves the base model insufficient. | ⬜ |
 
----
-
-## On-disk layout (runtime)
-
-Everything is under the mod's resources folder `moddata/BetterBuilding/` (from `getSkeleton().getResourcesFolder()`), consolidated so config + content + logs sit together:
-
-```
-moddata/BetterBuilding/
-  settings.yml          # composer_key (default MINUS), via StarMade FileConfiguration
-  palettes/
-    grey.json           # sample (grey armor)
-    crystal.json        # sample (teal/blue/orange crystal armor) — distinct so reskin is visible
-  templates/
-    *.smtpl + *.json    # captured templates + sidecars
-  styles/               # (empty — M2)
-  logs/                 # mod logs
-```
-
-> Earlier the content root was `./BetterBuilding/` (StarMade root). It was moved to `moddata/BetterBuilding/` so it sits with the config the user expected. `BbFiles.init(getSkeleton().getResourcesFolder())` sets this on enable.
+Design decisions already settled:
+- **Retrieval over fine-tuning.** The corpus is most valuable as in-context examples, not SFT targets (fake captions + scale + capability-vs-style make naive SFT fail). Fine-tuning is Phase 3, only if needed.
+- **Single-shot program, not multi-phase.** The earlier 4-phase approach fed the model text cross-sections it can't spatially parse. Generate one program; repair on quality-gate failure.
+- **Vision feedback is the key lever** minebench lacks: render the result, let the VLM critique the image, repair.
+- The frontier API (if used at all) is a **one-time offline tool** (captioning/distillation), never a runtime dependency.
 
 ---
 
-## Commands ( `/bb <sub>` )
+## Build / run / test
 
-| Command | Status | What it does |
-|---------|--------|--------------|
-| `/bb capture <name> [slot]` | ✅ works | Save current build-mode copy selection → `.smtpl` + sidecar. **Copy (Ctrl+C) a region first.** |
-| `/bb reskin <palette> [buffer]` | ✅ works | Shape-aware re-skin of the copy selection. **In-place** by default (rewrites blocks where they sit, undoable); `buffer` mutates the copy buffer for paste. |
-| `/bb inspect` | ✅ works | List distinct base blocks in the copy selection, flagged mapped/unmapped by palettes. Authoring aid. |
-| `/bb palette <name>` | 🟡 testing | Open the click-to-assign palette editor GUI (see below). |
-| `/bb reload` | ✅ works | Re-scan palettes/styles, report load errors. (Style loading is a stub until M2 StyleLoader.) |
-| `/bb compose` | ⬜ stub | Placeholder for the M3 composer. |
+- Code on Mac: `/Users/garret/Documents/GitHub/BetterBuilding`. StarMade.jar + libs present here, so it **compiles/typechecks on the Mac**.
+- **Game + LM Studio run on the Windows PC.** Workflow: build the jar, get it to the Windows `<starmade>/mods/`, reload in the in-game Mods menu.
+  - `./gradlew jar` → writes `BetterBuildingv2.0.0.jar` into the `starmade_root`/mods (set in `gradle.properties`; Mac path active, Windows path commented).
+  - To build for Windows: either build on Windows with the Windows `starmade_root`, or copy the Mac-built jar to the Windows mods folder (it's pure Java, no native bits).
+- Generated templates are written to `<starmade working dir>/BetterBuilding/templates/*.smtpl`.
 
-Keybind: **`-` (MINUS)** opens the composer (M3) — currently a no-op scaffold. Rebindable via `composer_key` in `settings.yml`. Every letter A–Z is taken by vanilla StarMade; MINUS is the one free convenient key. There is **no** rebindable mod-keybind registry in StarMade, hence config-driven.
+### Phase 0 test (`/bb_gentest`)
+Select any block in your hotbar, enter build mode, run `/bb_gentest`. It builds a
+synthetic **asymmetric** shape in code and loads it into PASTE mode:
+- 9×7×14 solid hull, a 3×3×3 notch carved from the **top-front-right (+X/+Y/+Z)** corner,
+  and a tall thin fin standing above the **+X** edge near the back (low Z).
+- **Pass criteria:** pasted shape has correct size, the notch and fin on the expected
+  sides (chirality correct, not mirrored), blocks intact (not dead/zero-HP/ghosted).
+- If chirality is flipped → axis/orientation convention bug. If blocks are dead/invalid
+  → HP packing needs `makeDataInt` with hitpoints (see below).
 
 ---
 
-## Architecture / package map
+## Load-bearing API recipe (recovered from git history + verified against StarMade.jar)
+
+The output path is the engine's native `CopyArea`; **do not hand-roll a segment codec.**
+
+- **Build a template in code** (`VoxelTemplate.toCopyArea()`):
+  ```java
+  CopyArea area = new CopyArea();
+  area.min = new Vector3i(0,0,0);
+  area.max = new Vector3i(dx-1, dy-1, dz-1);
+  // per non-air cell:
+  VoidSegmentPiece p = new VoidSegmentPiece();
+  p.voidPos.set(x, y, z);
+  p.setDataByReference(SegmentData.makeDataInt(type, orientation)); // (short, byte)
+  area.getPieces().add(p);
+  ```
+  `pieces` is sparse (one entry per block). `CopyArea` packing matches `index = x + y*dx + z*dx*dy`.
+- **HP caveat:** `makeDataInt(short,byte)` does not set hitpoints. If pasted blocks read as
+  invalid, switch to `makeDataInt(short type, byte orient, boolean active, byte hp)` (4-arg)
+  with full HP. Confirm empirically in Phase 0.
+- **Save/load** (`TemplateStore`): `CopyArea.save(name)` only writes to engine `./templates/`;
+  save there then `Files.move` to our folder. Load via `new CopyArea(); area.load(file)`.
+- **Loaded bounds gotcha:** `area.min/max` are sometimes (0,0,0) after `load()`. `fromCopyArea`
+  recomputes the bounding box from the pieces and prefers it when stored bounds are too small.
+- **Paste:** `BuildToolsManager btm = GameClient.getPICM().getBuildToolsManager();`
+  `btm.loadCopyArea(file)` (or `btm.setCopyArea(area)` in-memory) then
+  `btm.setCopyPasteMode(CopyPasteMode.PASTE)`.
+- **Selected block:** `GameClient.getPICM().getSelectedTypeWithSub()`; validate with `ElementKeyMap.isValidType(type)`.
+- **Commands:** implement `api.utils.game.chat.CommandInterface`; register in `onEnable` via
+  `StarLoader.registerCommand(new XxxCommand())`. Chat commands run on the **server thread**
+  (GUI/OpenGL work must be wrapped in `StarLoaderTexture.runOnGraphicsThread`; the paste path here does not touch GL).
+
+### Orientation (will matter from Phase 1 on)
+StarMade uses a 5-bit orientation (0–31): 6 basic directions plus rotated variants, and shape
+families (wedge/corner/tetra/hepta) interpret it differently. The earlier `BlueprintReader`
+**corrupted** this by collapsing 5-bit → 6 directions. For the rebuild: keep the raw orientation
+byte end-to-end (capture via `SegmentPiece.getOrientation()`, write via `makeDataInt`), never
+remap it. The native CopyArea path already preserves it losslessly.
+
+---
+
+## Current code map
 
 ```
 videogoose.betterbuilding
-  BetterBuilding.java       # entry: bootstrap folders, load config, install samples, register command + keybind
-  SampleContent.java        # writes grey.json / crystal.json on first run (writeIfAbsent)
-  command/                  # BbCommand dispatcher + SubCommand impls (capture, reskin, inspect, palette, reload, compose)
-  content/                  # Palette (model+loader+resolver), PaletteLibrary (cross-palette index), PaletteWriter, TemplateSidecar
-  slot/                     # Slot, SlotRegistry, Shape, SlotCell, ShapeInference, PaletteResolver
-  io/                       # TemplateStore (.smtpl + sidecar via engine CopyArea)
-  gui/                      # PaletteEditorDialog / Panel / State (click-to-assign editor)
-  util/                     # BbFiles (paths), BbConfig (settings.yml), BuildAccess (build-mode accessors)
+  BetterBuilding.java          # onEnable → StarLoader.registerCommand(new GenTestCommand())
+  gen/
+    VoxelTemplate.java         # dense grid (short type, byte orient); toCopyArea/fromCopyArea; fill/set/clear
+    TemplateStore.java         # save .smtpl (engine save + move), load
+  command/
+    GenTestCommand.java        # /bb_gentest — Phase-0 paste test, no LLM
 ```
 
----
-
-## Key technical findings (the load-bearing ones)
-
-1. **`.smtpl` is a native StarMade format.** `CopyArea.save(name)` / `.load(file)` serialize a block region with full fidelity (type, orientation, connections, inventory). We did **not** hand-roll an `Smd3Codec` — `TemplateStore` delegates to the engine and adds the JSON sidecar. `CopyArea.save()` only writes to `./templates/`, so we save there then move the file.
-
-2. **Shape-aware palette swap = StarMade's own FillTool logic.** A block's shape family lives on its **base/cube** block: `ElementInformation.styleIds` (shape variants) and `slabIds` (slabs), with `getSourceReference()` giving the base of any variant.
-   - **Gotcha that bit us:** `styleIds`/`slabIds` are **compact arrays** (e.g. `[wedge, corner, tetra, hepta]`), **NOT** indexed by `blockStyle.id`. Indexing by `blockStyle.id` (WEDGE=1, CORNER=2, TETRA=4, HEPTA=5) scrambled shapes. **Fix:** `Palette.resolve()` *searches* the target's variant arrays for the entry whose actual `blockStyle`/`slab` matches the source (`findVariant`). Layout-independent and correct.
-
-3. **In-place reskin uses `EditableSendableSegmentController.remove(...)`** with a `replaceFilterWith` + orientation — the atomic replace (same path as FillTool). `addElement` alone won't overwrite an occupied cell. Needs a `BuildRemoveCallback`, a `BuildInstruction`, and a `Set<Segment>` modded-set; commit with `pim.addToUndoStack(instr)`. Region bounds come from the copy area's `min`/`max`; blocks are read fresh from the world via `getSegmentBuffer().getPointUnsave(pos)`.
-
-4. **GUI must run on the graphics thread.** Chat commands execute on the **server thread** (`PacketCSAdminCommand.processPacketOnServer`); creating a `GUIInputDialog` makes OpenGL calls and throws "No OpenGL context" off-thread. Wrap dialog creation in `StarLoaderTexture.runOnGraphicsThread(...)`.
-
-5. **Block name lookup is locale-sensitive.** `ElementKeyMap.getInfoByName` matches the *translated* `getName()`. `Palette.lookup` falls back to the untranslated config name (scanning `getInfoArray()`) then numeric id, so palettes are stable across locales. Palettes are written with `getNameUntranslated()`.
-
-6. **Build-mode access chain:** `GameClient.getPICM()` / `GameClient.getClientState()....getBuildToolsManager()`. Selected hotbar block: `getPICM().getSelectedTypeWithSub()`. Controlled entity: `getPICM().getSegmentControlManager().getSegmentController()` (returns `EditableSendableSegmentController`).
-
----
-
-## Palette editor GUI (M2, in testing)
-
-- `/bb palette <name>` → `PaletteSub` sets `PaletteEditorState.current` (slot→block draft, preloaded from existing palette) then activates `PaletteEditorDialog` **on the graphics thread**.
-- Decision: **click-to-assign**, not drag-drop. The mod-facing `ItemSlot` widget is a non-functional prototype; the real `InventoryPanelNew` is coupled to `InventoryControlManager` (no standalone limited-slot inventory). Click-to-assign uses the proven `GUIInputDialogPanel` + `SimpleGUIVerticalButtonPane` + `GUITextOverlay` pattern.
-- Current iteration is **text-based** (Assign buttons + live status list). **Next iteration:** swap in block-icon slots via `GUIBlockSprite(state, type)`; revisit drag-drop later.
-- **Open test question:** does the dialog reliably open/render and do clicks update the status list? (Graphics-thread fix just applied.)
-
----
-
-## What's left in M2
-
-- [ ] **StyleLoader** — parse a style folder (`style.json` + palettes + `templates/`), resolve references, surface errors. Lock the draft schemas in PLAN_SUMMARY §1.
-- [ ] **`/bb reload`** upgrade — actually load styles into memory + list them (currently just counts files).
-- [ ] **Reference style pack** — ship one worked-example style folder.
-- [ ] **In-game template authoring** — select region → tag slot + per-face sockets → save into a style's `templates/`. (User chose GUI; will follow the palette-editor pattern.)
-- [ ] Palette editor: block-icon slots (and eventually drag-drop).
-
-## Future ideas (captured in agent memory)
-
-- Palette-authoring **drag-drop inventory UI** (labeled slots, copy-not-consume) — the eventual upgrade to click-to-assign.
-- **Glowing/emissive blocks** in palettes (Bastyn crystals, glowing motherboard) for dramatic reskins.
-- **Advanced Build Tools menu integration** via a mixin (`GUIAdvTool`) so BB tools live in the native build menu (`StarMod.getMixinConfigs()`).
-
----
-
-## Gotchas for next session
-
-- Rebuild + **reload the jar in the Mods menu**; palette JSON changes don't need a reload but code does.
-- Test reskin in **creative** — in-place replace consumes the target block from inventory in survival (engine gates on `checkAllPlace`).
-- `reskin`/`inspect`/`palette` all read the **copy buffer** — Ctrl+C a region first.
-- Old LLM/WFC code is gone from `main` but lives in git history (`22fec5b^`); the project pivoted to the template compositor.
+## Next up
+- [ ] Run `/bb_gentest` in-game; confirm geometry + chirality + block validity. Fix HP packing if needed.
+- [ ] Then Phase 1: `BlockPalette` (name↔id, orientation constants) + blueprint reading for the corpus.
+- [ ] Then `LuaExecutor` (the voxel.exec core) writing into `VoxelTemplate`, + `AIClient` (LM Studio settings: temp 0.7 / top_p 0.8 / top_k 20, 16k+ ctx, multimodal mmproj loaded).
+```
