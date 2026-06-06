@@ -5,6 +5,4 @@
 /build/
 *.DS_Store
 .claude
-/scripts/train/.venv/
-/scripts/train/unsloth_compiled_cache/
-*.pyc
+.continue

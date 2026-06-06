@@ -20,10 +20,13 @@ import java.nio.file.StandardCopyOption;
  */
 public final class TemplateStore {
 
-	/** Engine's hardcoded save folder for CopyArea.save(name). */
+	/**
+	 * Engine's hardcoded save folder for CopyArea.save(name).
+	 */
 	private static final File ENGINE_TEMPLATE_DIR = new File("./templates");
 
-	private TemplateStore() {}
+	private TemplateStore() {
+	}
 
 	/**
 	 * Save a {@link CopyArea} as {@code <name>.smtpl} into {@code dir}.
@@ -39,12 +42,16 @@ public final class TemplateStore {
 		return target;
 	}
 
-	/** Convenience: save a {@link VoxelTemplate} (uses its name). */
+	/**
+	 * Convenience: save a {@link VoxelTemplate} (uses its name).
+	 */
 	public static File save(File dir, VoxelTemplate template) throws IOException {
 		return save(dir, template.getName(), template.toCopyArea());
 	}
 
-	/** Load a {@code .smtpl} file into a fresh {@link CopyArea}. */
+	/**
+	 * Load a {@code .smtpl} file into a fresh {@link CopyArea}.
+	 */
 	public static CopyArea load(File smtpl) throws IOException {
 		CopyArea area = new CopyArea();
 		area.load(smtpl);
