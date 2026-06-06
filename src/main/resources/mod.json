@@ -13,5 +13,5 @@
   ],
   "core_mod": false,
   "requires_class_resize": false,
-  "hard_load_all_classes": false
+  "hard_load_all_classes": true
 }

@@ -127,7 +127,7 @@ Each phase ships something runnable; quality climbs, never blocked on training.
 ### Phase 0 — Foundation (output path) — 🟡 in progress
 **Goal:** prove code-built templates paste correctly in-game.
 - ✅ `VoxelTemplate`, `TemplateStore`, `/bb_gentest`.
-- ⬜ **Run `/bb_gentest` in-game.** Pass = correct size, correct chirality (notch top-front-right,
+- ✅ **Run `/bb_gentest` in-game.** Pass = correct size, correct chirality (notch top-front-right,
   fin on +X), blocks valid (not dead). Fix HP packing if blocks ghost (use 4-arg `makeDataInt`
   with full HP).
 - **Exit criteria:** a synthetic asymmetric template round-trips `VoxelTemplate→.smtpl→paste`
@@ -169,11 +169,14 @@ Each phase ships something runnable; quality climbs, never blocked on training.
 ## 5. Technical reference (verified against StarMade.jar)
 
 ### 5.1 Block data int (`SegmentData`)
-`type` 11 bits [0–10] · `hitpoints` 7 bits [11–17] · `active` 1 bit [18] · `orientation` 5 bits [19–23].
-- Pack: `SegmentData.makeDataInt(short type, byte orient)` — **does not set HP**. If pasted
-  blocks read as dead, use `makeDataInt(short type, byte orient, boolean active, byte hp)` with
-  full HP (max 127 in 7 bits; use the block's real max from `ElementInformation`).
-- `SEG = 32`, `BLOCK_COUNT = 32768` (32³). **The old 16³ reader was wrong.**
+**New Foundations uses the 4-byte layout `SegmentData4Byte`** (32 bits/block):
+`type` **13 bits** [0–12] (max id 8191) · `hitpoints` 7 bits [13–19] · `active` 1 bit [20] ·
+`orientation` 5 bits [21–25] · `extra` 6 bits [26–31].
+- **Do NOT hand-pack with the legacy `SegmentData.makeDataInt`** — it uses the old 3-byte layout
+  (type 11b, orientation at bit 19) and silently corrupts orientation + truncates 13-bit type ids.
+- **Pack via the piece's own setters** (they target `SegmentData4Byte`): `setDataByReference(0)`,
+  then `setType(short)`, `setOrientation(byte)`, `setHitpointsByte((1<<7)-1)` for full HP. Layout-proof.
+- `SEG = 32`, `BLOCK_COUNT = 32768` (32³). The old 16³ reader was wrong; so was 3-byte packing.
 
 ### 5.2 CopyArea recipe (build / save / load / paste)
 ```java
@@ -183,7 +186,7 @@ area.min = new Vector3i(0,0,0);
 area.max = new Vector3i(dx-1, dy-1, dz-1);
 VoidSegmentPiece p = new VoidSegmentPiece();
 p.voidPos.set(x,y,z);
-p.setDataByReference(SegmentData.makeDataInt(type, orient));
+p.setDataByReference(0); p.setType(type); p.setOrientation(orient); p.setHitpointsByte(127);
 area.getPieces().add(p);                 // sparse: one piece per non-air cell
 
 // save (engine writes ./templates/ only → move it)

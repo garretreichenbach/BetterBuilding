@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.CopyArea;
 import org.schema.game.common.data.VoidSegmentPiece;
-import org.schema.game.common.data.world.SegmentData;
+import org.schema.game.common.data.world.SegmentData4Byte;
 
 /**
  * Dense 3D voxel grid of StarMade blocks: each cell holds a block type id
@@ -22,6 +22,9 @@ import org.schema.game.common.data.world.SegmentData;
  * {@link SegmentData#makeDataInt(short, byte)} (type + orientation).
  */
 public final class VoxelTemplate {
+
+	/** Full-health hitpoint byte (max value of the 7-bit hp field) = 100% HP. */
+	private static final int FULL_HP_BYTE = (1 << SegmentData4Byte.hpBits) - 1;
 
 	private final int dx, dy, dz;
 	private final short[] types;
@@ -52,28 +55,30 @@ public final class VoxelTemplate {
 	public static VoxelTemplate fromCopyArea(String name, CopyArea area) {
 		ObjectArrayList<VoidSegmentPiece> pieces = area.getPieces();
 
-		int minX = area.min.x, minY = area.min.y, minZ = area.min.z;
-		int maxX = area.max.x, maxY = area.max.y, maxZ = area.max.z;
-		boolean storedValid = (maxX >= minX && maxY >= minY && maxZ >= minZ);
+		// The pieces' own voidPos is the source of truth. The engine's
+		// CopyArea.copyArea(...) stores pieces relative-to-min (0-origin) while
+		// leaving area.min/max at the absolute scan bounds — inconsistent spaces —
+		// so we derive the bounding box from the pieces and only fall back to
+		// area.min/max when there are no pieces.
+		int minX, minY, minZ, maxX, maxY, maxZ;
 		if(!pieces.isEmpty()) {
-			int pMinX = Integer.MAX_VALUE, pMinY = Integer.MAX_VALUE, pMinZ = Integer.MAX_VALUE;
-			int pMaxX = Integer.MIN_VALUE, pMaxY = Integer.MIN_VALUE, pMaxZ = Integer.MIN_VALUE;
+			minX = minY = minZ = Integer.MAX_VALUE;
+			maxX = maxY = maxZ = Integer.MIN_VALUE;
 			for(int i = 0; i < pieces.size(); i++) {
 				VoidSegmentPiece p = pieces.get(i);
-				pMinX = Math.min(pMinX, p.voidPos.x);
-				pMaxX = Math.max(pMaxX, p.voidPos.x);
-				pMinY = Math.min(pMinY, p.voidPos.y);
-				pMaxY = Math.max(pMaxY, p.voidPos.y);
-				pMinZ = Math.min(pMinZ, p.voidPos.z);
-				pMaxZ = Math.max(pMaxZ, p.voidPos.z);
+				minX = Math.min(minX, p.voidPos.x);
+				maxX = Math.max(maxX, p.voidPos.x);
+				minY = Math.min(minY, p.voidPos.y);
+				maxY = Math.max(maxY, p.voidPos.y);
+				minZ = Math.min(minZ, p.voidPos.z);
+				maxZ = Math.max(maxZ, p.voidPos.z);
 			}
-			if(!storedValid || pMinX < minX || pMinY < minY || pMinZ < minZ || pMaxX > maxX || pMaxY > maxY || pMaxZ > maxZ) {
-				minX = pMinX;
-				minY = pMinY;
-				minZ = pMinZ;
-				maxX = pMaxX;
-				maxY = pMaxY;
-				maxZ = pMaxZ;
+		} else {
+			minX = area.min.x; minY = area.min.y; minZ = area.min.z;
+			maxX = area.max.x; maxY = area.max.y; maxZ = area.max.z;
+			if(maxX < minX || maxY < minY || maxZ < minZ) {
+				minX = minY = minZ = 0;
+				maxX = maxY = maxZ = 0;
 			}
 		}
 
@@ -149,6 +154,24 @@ public final class VoxelTemplate {
 		set(x, y, z, type, (byte) 0);
 	}
 
+	// --- aliases used by LuaExecutor: independent type/orientation setters ---
+
+	public short getTypeAt(int x, int y, int z) {
+		return getType(x, y, z);
+	}
+
+	public byte getOrientationAt(int x, int y, int z) {
+		return getOrientation(x, y, z);
+	}
+
+	public void setTypeAt(int x, int y, int z, short type) {
+		if (inBounds(x, y, z)) types[index(x, y, z)] = type;
+	}
+
+	public void setOrientationAt(int x, int y, int z, byte orientation) {
+		if (inBounds(x, y, z)) orients[index(x, y, z)] = orientation;
+	}
+
 	// --- convenience builders (the rich primitive set lives later in LuaExecutor) ---
 
 	/**
@@ -209,7 +232,14 @@ public final class VoxelTemplate {
 					if(type == 0) continue;
 					VoidSegmentPiece piece = new VoidSegmentPiece();
 					piece.voidPos.set(x, y, z);
-					piece.setDataByReference(SegmentData.makeDataInt(type, orients[i]));
+					// Pack via the piece's own setters so we stay correct under the current
+					// SegmentData4Byte layout (type 13b, hp 7b, active 1b, orientation 5b).
+					// Hand-packing with the legacy SegmentData.makeDataInt put orientation in
+					// the wrong bits and truncated 13-bit type ids.
+					piece.setDataByReference(0);
+					piece.setType(type);
+					piece.setOrientation(orients[i]);
+					piece.setHitpointsByte(FULL_HP_BYTE);
 					pieces.add(piece);
 				}
 			}
