@@ -7,10 +7,10 @@ import api.listener.events.gui.HudCreateEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
 import videogoose.betterbuilding.annotation.AnnotationStore;
-import videogoose.betterbuilding.input.AnnotationControls;
 import videogoose.betterbuilding.render.AnnotationGeometryDrawer;
 import videogoose.betterbuilding.render.AnnotationLabelOverlay;
 import videogoose.betterbuilding.render.EntityResolver;
+import videogoose.betterbuilding.ui.AnnotationPanelRegistrar;
 
 /**
  * Building utilities for StarMade, centred on in-world annotations: labels, leader lines
@@ -26,7 +26,6 @@ public class BetterBuilding extends StarMod {
 
 	private AnnotationStore store;
 	private EntityResolver entities;
-	private AnnotationControls controls;
 
 	public BetterBuilding() {
 	}
@@ -57,8 +56,7 @@ public class BetterBuilding extends StarMod {
 		registerWorldDrawer();
 		registerHudOverlay();
 
-		controls = new AnnotationControls(this, store);
-		controls.register();
+		new AnnotationPanelRegistrar(this, store).register();
 	}
 
 	/** Geometry (leader lines, dimension lines) is drawn in the world pass. */
