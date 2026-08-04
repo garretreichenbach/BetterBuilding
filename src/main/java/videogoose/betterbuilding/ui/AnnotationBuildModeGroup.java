@@ -1,7 +1,5 @@
 package videogoose.betterbuilding.ui;
 
-import java.util.List;
-
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildSelection;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
@@ -349,7 +347,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 				return new ButtonCallback() {
 					@Override
 					public void pressedLeftMouse() {
-						removeLast();
+						openList();
 					}
 
 					@Override
@@ -360,12 +358,12 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 
 			@Override
 			public String getName() {
-				return "Remove Last";
+				return "Manage...";
 			}
 
 			@Override
 			public String getToolTipText() {
-				return "Delete the most recently added annotation on this entity";
+				return "List every annotation on this entity, to edit, hide, locate or delete";
 			}
 		});
 
@@ -497,19 +495,14 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 		return anchor;
 	}
 
-	private void removeLast() {
+	private void openList() {
 		SegmentController c = currentEntity();
 		if(c == null || c.getUniqueIdentifier() == null) {
 			status = "no entity";
 			return;
 		}
-		List<Annotation> list = store.forEntity(c.getUniqueIdentifier());
-		if(list.isEmpty()) {
-			status = "nothing to remove";
-			return;
-		}
-		store.remove(list.get(list.size() - 1));
-		status = "removed";
+		new AnnotationListDialog(store, c.getUniqueIdentifier()).activate();
+		status = "";
 	}
 
 	/**

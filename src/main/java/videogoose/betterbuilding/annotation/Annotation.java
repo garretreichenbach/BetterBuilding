@@ -61,6 +61,24 @@ public class Annotation {
 	 */
 	public transient boolean baked;
 
+	/**
+	 * Wall-clock time until which this draws highlighted, set by "Locate" in the list so
+	 * the user can tell which annotation a row refers to. Transient: a highlight is a
+	 * momentary UI state, not something to persist.
+	 */
+	public transient long highlightUntil;
+
+	public boolean isHighlighted() {
+		return System.currentTimeMillis() < highlightUntil;
+	}
+
+	/** Highlights this annotation for a few seconds. */
+	public void flashHighlight() {
+		highlightUntil = System.currentTimeMillis() + HIGHLIGHT_MS;
+	}
+
+	private static final long HIGHLIGHT_MS = 4000;
+
 	public enum Visibility {
 		ALWAYS,
 		BUILD_MODE_ONLY,
@@ -100,6 +118,10 @@ public class Annotation {
 	}
 
 	public Vector4f getColor(Vector4f out) {
+		if(isHighlighted()) {
+			out.set(1, 1, 1, 1);
+			return out;
+		}
 		out.set(colorR, colorG, colorB, orphaned ? colorA * 0.4f : colorA);
 		return out;
 	}
