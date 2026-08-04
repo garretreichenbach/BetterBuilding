@@ -84,6 +84,9 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 	@Override
 	public void build(GUIContentPane pane, GUIDockableDirtyInterface dInt) {
 		pane.setTextBoxHeightLast(30);
+		//one box per row; the layer bar needs its own because GUIAdvTextBar sizes its inner
+		//bar to the whole container, so two text bars on one row overlap and overflow
+		pane.addNewTextBox(30);
 		pane.addNewTextBox(30);
 		pane.addNewTextBox(30);
 		pane.addNewTextBox(30);
@@ -98,7 +101,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 	}
 
 	private void buildDimension(GUIContentPane pane) {
-		addButton(pane.getContent(0, 2), 0, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 3), 0, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return pendingA == null ? HButtonColor.BLUE : HButtonColor.YELLOW;
@@ -122,7 +125,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 
 			@Override
 			public String getName() {
-				return pendingA == null ? "Dim: Set Start" : "Dim: Start Set";
+				return pendingA == null ? "Dim Start" : "Start Set";
 			}
 
 			@Override
@@ -132,7 +135,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
-		addButton(pane.getContent(0, 2), 1, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 3), 1, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.GREEN;
@@ -154,7 +157,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 
 			@Override
 			public String getName() {
-				return "Dim: Finish";
+				return "Dim End";
 			}
 
 			@Override
@@ -168,7 +171,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
-		addButton(pane.getContent(0, 2), 2, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 3), 2, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.BLUE;
@@ -190,7 +193,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 
 			@Override
 			public String getName() {
-				return "Dim: Selection";
+				return "Dim Box";
 			}
 
 			@Override
@@ -231,7 +234,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 		textBar.setInactiveText("Label text");
 		textBar.setMouseUpdateEnabled(true);
 
-		layerBar = addTextBar(pane.getContent(0, 0), 1, 0, new TextBarResult() {
+		layerBar = addTextBar(pane.getContent(0, 1), 0, 0, new TextBarResult() {
 			@Override
 			public String onTextChanged(String text) {
 				pendingLayer = normaliseLayer(text);
@@ -257,12 +260,6 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			public String getToolTipText() {
 				return "Layer for new annotations. Type any name to start a new layer.";
 			}
-
-			@Override
-			public float getWeight() {
-				//narrower than the text bar; layer names are short
-				return 0.5f;
-			}
 		});
 		layerBar.setInactiveText(Annotation.DEFAULT_LAYER);
 		layerBar.setMouseUpdateEnabled(true);
@@ -279,7 +276,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 	private void buildSizeAndCreate(GUIContentPane pane) {
 		//size cycles on click rather than using a dropdown: four options do not justify
 		//the dropdown's element plumbing, and one click is faster than two
-		addButton(pane.getContent(0, 1), 0, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 2), 0, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.BLUE;
@@ -307,11 +304,11 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 
 			@Override
 			public String getToolTipText() {
-				return "Click to cycle the text size for new annotations";
+				return "Text size for new annotations. Click to cycle.";
 			}
 		});
 
-		addButton(pane.getContent(0, 1), 1, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 2), 1, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.GREEN;
@@ -342,7 +339,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
-		addButton(pane.getContent(0, 1), 2, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 2), 2, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.GREEN;
@@ -375,7 +372,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 	}
 
 	private void buildStatus(GUIContentPane pane) {
-		addStatLabel(pane.getContent(0, 3), 0, 0, new StatLabelResult() {
+		addStatLabel(pane.getContent(0, 6), 0, 0, new StatLabelResult() {
 			@Override
 			public String getName() {
 				return "On this entity";
@@ -396,7 +393,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
-		addButton(pane.getContent(0, 3), 1, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 4), 0, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.ORANGE;
@@ -427,7 +424,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
-		addButton(pane.getContent(0, 3), 2, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 4), 1, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.BLUE;
@@ -458,7 +455,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
-		addStatLabel(pane.getContent(0, 3), 0, 1, new StatLabelResult() {
+		addStatLabel(pane.getContent(0, 6), 0, 1, new StatLabelResult() {
 			@Override
 			public String getName() {
 				return "Status";
@@ -589,7 +586,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 	}
 
 	private void buildTransfer(GUIContentPane pane) {
-		addButton(pane.getContent(0, 4), 0, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 5), 0, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.BLUE;
@@ -622,7 +619,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
-		addButton(pane.getContent(0, 4), 1, 0, new ButtonResult() {
+		addButton(pane.getContent(0, 5), 1, 0, new ButtonResult() {
 			@Override
 			public HButtonColor getColor() {
 				return HButtonColor.BLUE;
