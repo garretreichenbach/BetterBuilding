@@ -301,8 +301,13 @@ Necessary the moment a real ship accumulates more than a dozen annotations.
       a few seconds instead, which answers "which one is this?" without fighting the build
       mode camera. A real camera move needs a way to reposition the build mode view that
       has not been found yet.
-- [ ] **Layers/groups** with per-layer visibility toggles, collapsible in the list so a
-      ship with hundreds of annotations stays navigable
+- [x] **Layers** — assigned at creation via the layer bar, reassignable per-row, with a
+      Layers dialog for per-layer show/hide and "show only this". No registry: a layer
+      exists exactly when an annotation names it.
+- [ ] **Collapsible layer groups in the list.** Currently the list sorts and searches by
+      layer, which gives visual grouping, but rows are flat. True collapse needs nested
+      rows in `ScrollableTableList` and is worth doing once a ship has enough annotations
+      to make scrolling painful.
 - [ ] Visibility rules: build-mode-only vs. always, distance fade
 - [ ] Orphan detection and cleanup action
 - [ ] Per-layer export/import
