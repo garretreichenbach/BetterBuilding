@@ -278,14 +278,14 @@ range. Do not fetch the whole set eagerly; the index exists precisely so we do n
 
 The vertical slice that exercises the whole stack.
 
-- [ ] `Annotation` / `Anchor` model + per-entity in-memory store
-- [ ] `ModWorldDrawer` registration and draw loop
-- [ ] **Point label** — text pinned to a block coordinate
-- [ ] **Leader-line label** — text offset from anchor with a line back to it
-- [ ] **Distance dimension** — two anchors, line with end ticks, live length readout
-- [ ] Creation flow: build-mode keybind + text-entry dialog
-- [ ] Persistence via `PersistentObjectUtil`
-- [ ] **Export / import** JSON, with replace/merge/append modes
+- [x] `Annotation` / `Anchor` model + per-entity in-memory store
+- [x] `ModWorldDrawer` registration and draw loop
+- [x] **Point label** — text pinned to a block coordinate
+- [x] **Leader-line label** — text offset from anchor with a line back to it
+- [x] **Distance dimension** — two anchors, line with end ticks, live length readout
+- [x] Creation flow: advanced build mode panel section (keybinds were tried and removed)
+- [x] Persistence via `PersistentObjectUtil`
+- [x] **Export / import** JSON, with replace/merge/append modes, plus clipboard copy/paste
 - [ ] **Read baked-in annotations** from block custom data (`bb:annotation` key),
       rendered read-only alongside locally authored ones
 
