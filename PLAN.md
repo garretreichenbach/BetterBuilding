@@ -293,9 +293,13 @@ The vertical slice that exercises the whole stack.
 
 Necessary the moment a real ship accumulates more than a dozen annotations.
 
-- [ ] **Layers/groups** with per-layer visibility toggles
-- [ ] **Annotation list GUI** — all annotations on the current entity, click to focus camera
-- [ ] Edit / delete / recolor existing annotations
+- [ ] **Annotation list** — every annotation on the current entity, listed individually
+      with per-row actions: edit text, change size/colour, hide, delete, jump camera to it.
+      This is the real interface; the current "Remove Last" button is a stopgap that only
+      exists because there is nowhere yet to select a specific annotation, and it should be
+      deleted once the list lands.
+- [ ] **Layers/groups** with per-layer visibility toggles, collapsible in the list so a
+      ship with hundreds of annotations stays navigable
 - [ ] Visibility rules: build-mode-only vs. always, distance fade
 - [ ] Orphan detection and cleanup action
 - [ ] Per-layer export/import
