@@ -1,19 +1,13 @@
 package videogoose.betterbuilding;
 
-import org.schema.game.client.data.GameClientState;
-import org.schema.game.common.controller.SegmentController;
-import org.schema.game.common.data.SegmentPiece;
 
-import api.common.GameClient;
 import api.listener.Listener;
 import api.listener.events.draw.RegisterWorldDrawersEvent;
-import api.listener.events.gui.ChatMessageParseEvent;
 import api.listener.events.gui.HudCreateEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
-import videogoose.betterbuilding.annotation.Anchor;
-import videogoose.betterbuilding.annotation.Annotation;
 import videogoose.betterbuilding.annotation.AnnotationStore;
+import videogoose.betterbuilding.input.AnnotationControls;
 import videogoose.betterbuilding.render.AnnotationGeometryDrawer;
 import videogoose.betterbuilding.render.AnnotationLabelOverlay;
 import videogoose.betterbuilding.render.EntityResolver;
@@ -32,6 +26,7 @@ public class BetterBuilding extends StarMod {
 
 	private AnnotationStore store;
 	private EntityResolver entities;
+	private AnnotationControls controls;
 
 	public BetterBuilding() {
 	}
@@ -61,7 +56,9 @@ public class BetterBuilding extends StarMod {
 
 		registerWorldDrawer();
 		registerHudOverlay();
-		registerDebugCommands();
+
+		controls = new AnnotationControls(this, store);
+		controls.register();
 	}
 
 	/** Geometry (leader lines, dimension lines) is drawn in the world pass. */
@@ -84,82 +81,4 @@ public class BetterBuilding extends StarMod {
 		}, this);
 	}
 
-	/**
-	 * Temporary commands for validating the render path end to end. Scaffolding for the
-	 * real build-mode creation flow, not the intended interface.
-	 */
-	private void registerDebugCommands() {
-		StarLoader.registerListener(ChatMessageParseEvent.class, new Listener<ChatMessageParseEvent>() {
-			@Override
-			public void onEvent(ChatMessageParseEvent event) {
-				if(event.getChatMessage() == null) {
-					return;
-				}
-				String message = event.getChatMessage().text;
-				if(message == null || !message.startsWith(COMMAND_PREFIX)) {
-					return;
-				}
-				event.setCanceled(true);
-				handleCommand(message.substring(COMMAND_PREFIX.length()).trim());
-			}
-		}, this);
-	}
-
-	private static final String COMMAND_PREFIX = "!bb ";
-
-	private void handleCommand(String args) {
-		if(args.startsWith("label ")) {
-			addLabelAtSelectedBlock(args.substring("label ".length()).trim(), false);
-		} else if(args.startsWith("leader ")) {
-			addLabelAtSelectedBlock(args.substring("leader ".length()).trim(), true);
-		} else if(args.equals("count")) {
-			GameClient.sendMessage("[BetterBuilding] " + store.size() + " annotation(s) stored");
-		} else {
-			GameClient.sendMessage("[BetterBuilding] usage: !bb label <text> | !bb leader <text> | !bb count");
-		}
-	}
-
-	/**
-	 * Anchors an annotation to the block the player currently has selected, which means
-	 * being in build mode with a block targeted.
-	 */
-	private void addLabelAtSelectedBlock(String text, boolean leader) {
-		if(text.isEmpty()) {
-			GameClient.sendMessage("[BetterBuilding] need some text");
-			return;
-		}
-		SegmentPiece piece = selectedBlock();
-		if(piece == null) {
-			GameClient.sendMessage("[BetterBuilding] look at a block in build mode first");
-			return;
-		}
-		SegmentController c = piece.getSegmentController();
-		if(c == null || c.getUniqueIdentifier() == null) {
-			GameClient.sendMessage("[BetterBuilding] that block's entity is not ready yet");
-			return;
-		}
-		Anchor anchor = Anchor.fromAbsoluteBlock(c.getUniqueIdentifier(),
-				piece.getAbsolutePosX(), piece.getAbsolutePosY(), piece.getAbsolutePosZ());
-		anchor.blockIndex = piece.getAbsoluteIndex();
-
-		store.add(leader ? Annotation.leaderLabel(anchor, text) : Annotation.label(anchor, text));
-		GameClient.sendMessage("[BetterBuilding] added: " + text);
-	}
-
-	private SegmentPiece selectedBlock() {
-		GameClientState state = GameClient.getClientState();
-		if(state == null) {
-			return null;
-		}
-		try {
-			return state.getGlobalGameControlManager()
-					.getIngameControlManager()
-					.getPlayerGameControlManager()
-					.getPlayerIntercationManager()
-					.getSelectedBlockByActiveController();
-		} catch(Exception e) {
-			//the control manager chain is only fully wired while in game
-			return null;
-		}
-	}
 }

@@ -25,6 +25,9 @@ public class Annotation {
 
 	public String text = "";
 
+	/** Text size. Per-annotation so a section header can outrank a small note. */
+	public LabelSize size = LabelSize.MEDIUM;
+
 	/** Layer name, for bulk visibility toggling. */
 	public String layer = DEFAULT_LAYER;
 
@@ -89,6 +92,11 @@ public class Annotation {
 		a.anchor = from;
 		a.anchorB = to;
 		return a;
+	}
+
+	/** Never null, even for annotations deserialised from before sizes existed. */
+	public LabelSize getSize() {
+		return size == null ? LabelSize.MEDIUM : size;
 	}
 
 	public Vector4f getColor(Vector4f out) {

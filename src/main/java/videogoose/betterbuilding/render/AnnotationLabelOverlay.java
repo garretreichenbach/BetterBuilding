@@ -1,6 +1,6 @@
 package videogoose.betterbuilding.render;
 
-import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 
 import javax.vecmath.Vector3f;
@@ -17,6 +17,7 @@ import org.schema.schine.graphicsengine.util.WorldToScreenConverter;
 
 import videogoose.betterbuilding.annotation.Annotation;
 import videogoose.betterbuilding.annotation.AnnotationStore;
+import videogoose.betterbuilding.annotation.LabelSize;
 
 /**
  * Draws annotation text during the GUI pass, where orthogonal projection is already set up.
@@ -32,7 +33,13 @@ public class AnnotationLabelOverlay extends GUIElement {
 	private final AnnotationStore store;
 	private final EntityResolver entities;
 
-	private GUITextOverlay text;
+	/**
+	 * One overlay per size, created on first use. Each is bound to a font rasterised at
+	 * its own size, which is what keeps text crisp instead of scaling one bitmap font up.
+	 */
+	private final EnumMap<LabelSize, GUITextOverlay> textBySize = new EnumMap<LabelSize, GUITextOverlay>(LabelSize.class);
+
+	private boolean initialised;
 
 	private final Vector3f anchorWorld = new Vector3f();
 	private final Vector3f labelWorld = new Vector3f();
@@ -48,9 +55,22 @@ public class AnnotationLabelOverlay extends GUIElement {
 
 	@Override
 	public void onInit() {
-		text = new GUITextOverlay(32, 32, getState());
-		text.setTextSimple("");
-		text.onInit();
+		initialised = true;
+	}
+
+	/**
+	 * Fonts are built against the GL context, so overlays are created on the render thread
+	 * at first use rather than eagerly in {@link #onInit()}.
+	 */
+	private GUITextOverlay overlayFor(LabelSize size) {
+		GUITextOverlay overlay = textBySize.get(size);
+		if(overlay == null) {
+			overlay = new GUITextOverlay(32, 32, size.getFont(), getState());
+			overlay.setTextSimple("");
+			overlay.onInit();
+			textBySize.put(size, overlay);
+		}
+		return overlay;
 	}
 
 	@Override
@@ -59,7 +79,7 @@ public class AnnotationLabelOverlay extends GUIElement {
 
 	@Override
 	public void draw() {
-		if(text == null || store.size() == 0) {
+		if(!initialised || store.size() == 0) {
 			return;
 		}
 		WorldToScreenConverter converter = converter();
@@ -106,6 +126,7 @@ public class AnnotationLabelOverlay extends GUIElement {
 		converter.convert(labelWorld, onScreen, true, camera);
 
 		a.getColor(color);
+		GUITextOverlay text = overlayFor(a.getSize());
 		text.setTextSimple(caption);
 		text.getPos().set((int) onScreen.x, (int) onScreen.y, 0);
 		text.setColor(color.x, color.y, color.z, color.w);
@@ -144,10 +165,11 @@ public class AnnotationLabelOverlay extends GUIElement {
 
 	@Override
 	public void cleanUp() {
-		if(text != null) {
-			text.cleanUp();
-			text = null;
+		for(GUITextOverlay overlay : textBySize.values()) {
+			overlay.cleanUp();
 		}
+		textBySize.clear();
+		initialised = false;
 	}
 
 	@Override
