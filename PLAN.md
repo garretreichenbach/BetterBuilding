@@ -293,11 +293,14 @@ The vertical slice that exercises the whole stack.
 
 Necessary the moment a real ship accumulates more than a dozen annotations.
 
-- [ ] **Annotation list** — every annotation on the current entity, listed individually
-      with per-row actions: edit text, change size/colour, hide, delete, jump camera to it.
-      This is the real interface; the current "Remove Last" button is a stopgap that only
-      exists because there is nowhere yet to select a specific annotation, and it should be
-      deleted once the list lands.
+- [x] **Annotation list** — every annotation on the current entity, listed individually
+      with per-row actions: edit text, cycle size, hide/show, locate, delete. Sortable and
+      searchable. "Remove Last" is gone.
+- [ ] Per-row colour picker (size and visibility are done; colour is still creation-time only)
+- [ ] **Camera jump** from a list row. Currently "Locate" flashes the annotation white for
+      a few seconds instead, which answers "which one is this?" without fighting the build
+      mode camera. A real camera move needs a way to reposition the build mode view that
+      has not been found yet.
 - [ ] **Layers/groups** with per-layer visibility toggles, collapsible in the list so a
       ship with hundreds of annotations stays navigable
 - [ ] Visibility rules: build-mode-only vs. always, distance fade
