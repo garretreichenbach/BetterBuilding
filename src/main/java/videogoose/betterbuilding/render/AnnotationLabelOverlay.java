@@ -101,7 +101,7 @@ public class AnnotationLabelOverlay extends GUIElement {
 	}
 
 	private void drawLabel(SegmentController c, Annotation a, WorldToScreenConverter converter, Camera camera) {
-		if(a.visibility == Annotation.Visibility.HIDDEN || a.anchor == null) {
+		if(!store.isVisible(a) || a.anchor == null) {
 			return;
 		}
 		String caption = caption(a);

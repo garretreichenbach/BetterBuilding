@@ -89,7 +89,7 @@ public class AnnotationGeometryDrawer extends ModWorldDrawer {
 	}
 
 	private void drawAnnotation(SegmentController c, Annotation a) {
-		if(a.visibility == Annotation.Visibility.HIDDEN || a.anchor == null) {
+		if(!store.isVisible(a) || a.anchor == null) {
 			return;
 		}
 		if(a.anchor.toWorld(c, anchorWorld) == null) {

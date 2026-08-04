@@ -3,8 +3,10 @@ package videogoose.betterbuilding.annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 import api.mod.StarMod;
 import api.mod.config.PersistentObjectUtil;
@@ -26,6 +28,9 @@ public class AnnotationStore {
 	private final Map<String, List<Annotation>> byEntity = new HashMap<String, List<Annotation>>();
 
 	private static final List<Annotation> NONE = Collections.emptyList();
+
+	/** Loaded in {@link #load()}; one instance, persisted alongside the annotations. */
+	private LayerSettings layers;
 
 	public AnnotationStore(StarMod mod) {
 		this.mod = mod;
@@ -49,6 +54,81 @@ public class AnnotationStore {
 		if(dropped > 0) {
 			System.err.println("[BetterBuilding] dropped " + dropped + " annotation(s) with no anchor");
 		}
+		loadLayerSettings();
+	}
+
+	private void loadLayerSettings() {
+		ArrayList<Object> stored = PersistentObjectUtil.getObjects(mod.getSkeleton(), LayerSettings.class);
+		if(stored.isEmpty()) {
+			layers = new LayerSettings();
+			PersistentObjectUtil.addObject(mod.getSkeleton(), layers);
+		} else {
+			layers = (LayerSettings) stored.get(0);
+			if(layers.hidden == null) {
+				layers.hidden = new HashSet<String>();
+			}
+		}
+	}
+
+	public boolean isLayerHidden(String layer) {
+		return layers != null && layers.isHidden(layer);
+	}
+
+	public void setLayerHidden(String layer, boolean hidden) {
+		if(layers == null) {
+			return;
+		}
+		layers.setHidden(layer, hidden);
+		save();
+	}
+
+	/**
+	 * Single place the renderers ask whether to draw something, so the per-annotation
+	 * setting and the per-layer setting cannot drift apart between the geometry pass and
+	 * the label pass.
+	 */
+	public boolean isVisible(Annotation a) {
+		if(a == null || a.visibility == Annotation.Visibility.HIDDEN) {
+			return false;
+		}
+		return !isLayerHidden(a.layer);
+	}
+
+	/** @return layer names in use on this entity, sorted, never empty of the default. */
+	public TreeSet<String> layersFor(String entityKey) {
+		TreeSet<String> found = new TreeSet<String>();
+		found.add(Annotation.DEFAULT_LAYER);
+		for(Annotation a : forEntity(entityKey)) {
+			if(a.layer != null && !a.layer.isEmpty()) {
+				found.add(a.layer);
+			}
+		}
+		return found;
+	}
+
+	/** @return every layer name in use across all entities, sorted. */
+	public TreeSet<String> allLayers() {
+		TreeSet<String> found = new TreeSet<String>();
+		found.add(Annotation.DEFAULT_LAYER);
+		for(List<Annotation> list : byEntity.values()) {
+			for(Annotation a : list) {
+				if(a.layer != null && !a.layer.isEmpty()) {
+					found.add(a.layer);
+				}
+			}
+		}
+		return found;
+	}
+
+	/** @return how many annotations on this entity belong to the given layer. */
+	public int countInLayer(String entityKey, String layer) {
+		int n = 0;
+		for(Annotation a : forEntity(entityKey)) {
+			if(layer.equals(a.layer)) {
+				n++;
+			}
+		}
+		return n;
 	}
 
 	public void save() {

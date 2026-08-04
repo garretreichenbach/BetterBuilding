@@ -34,7 +34,9 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 	private final AnnotationStore store;
 
 	private GUIAdvTextBar textBar;
+	private GUIAdvTextBar layerBar;
 	private String pendingText = "";
+	private String pendingLayer = Annotation.DEFAULT_LAYER;
 	private LabelSize size = LabelSize.MEDIUM;
 
 	/** Shown in the status line until the next action replaces it. */
@@ -214,6 +216,50 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 		});
 		textBar.setInactiveText("Label text");
 		textBar.setMouseUpdateEnabled(true);
+
+		layerBar = addTextBar(pane.getContent(0, 0), 1, 0, new TextBarResult() {
+			@Override
+			public String onTextChanged(String text) {
+				pendingLayer = normaliseLayer(text);
+				return pendingLayer;
+			}
+
+			@Override
+			public TextBarCallback initCallback() {
+				return new TextBarCallback() {
+					@Override
+					public void onValueChanged(String value) {
+						pendingLayer = normaliseLayer(value);
+					}
+				};
+			}
+
+			@Override
+			public String getName() {
+				return "Layer";
+			}
+
+			@Override
+			public String getToolTipText() {
+				return "Layer for new annotations. Type any name to start a new layer.";
+			}
+
+			@Override
+			public float getWeight() {
+				//narrower than the text bar; layer names are short
+				return 0.5f;
+			}
+		});
+		layerBar.setInactiveText(Annotation.DEFAULT_LAYER);
+		layerBar.setMouseUpdateEnabled(true);
+	}
+
+	/** Blank means the default layer, so an untouched layer bar behaves sensibly. */
+	private static String normaliseLayer(String value) {
+		if(value == null || value.trim().isEmpty()) {
+			return Annotation.DEFAULT_LAYER;
+		}
+		return value.trim();
 	}
 
 	private void buildSizeAndCreate(GUIContentPane pane) {
@@ -367,6 +413,37 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 			}
 		});
 
+		addButton(pane.getContent(0, 3), 2, 0, new ButtonResult() {
+			@Override
+			public HButtonColor getColor() {
+				return HButtonColor.BLUE;
+			}
+
+			@Override
+			public ButtonCallback initCallback() {
+				return new ButtonCallback() {
+					@Override
+					public void pressedLeftMouse() {
+						openLayers();
+					}
+
+					@Override
+					public void pressedRightMouse() {
+					}
+				};
+			}
+
+			@Override
+			public String getName() {
+				return "Layers...";
+			}
+
+			@Override
+			public String getToolTipText() {
+				return "Show or hide whole layers at once";
+			}
+		});
+
 		addStatLabel(pane.getContent(0, 3), 0, 1, new StatLabelResult() {
 			@Override
 			public String getName() {
@@ -406,6 +483,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 
 		Annotation a = leader ? Annotation.leaderLabel(anchor, pendingText) : Annotation.label(anchor, pendingText);
 		a.size = size;
+		a.layer = pendingLayer;
 		store.add(a);
 		status = "added";
 	}
@@ -470,6 +548,7 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 		Annotation a = Annotation.dimension(from, to);
 		a.size = size;
 		a.text = pendingText;
+		a.layer = pendingLayer;
 		store.add(a);
 		status = "dimension added";
 	}
@@ -493,6 +572,16 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 				piece.getAbsolutePosX(), piece.getAbsolutePosY(), piece.getAbsolutePosZ());
 		anchor.blockIndex = piece.getAbsoluteIndex();
 		return anchor;
+	}
+
+	private void openLayers() {
+		SegmentController c = currentEntity();
+		if(c == null || c.getUniqueIdentifier() == null) {
+			status = "no entity";
+			return;
+		}
+		new LayerListDialog(store, c.getUniqueIdentifier()).activate();
+		status = "";
 	}
 
 	private void openList() {

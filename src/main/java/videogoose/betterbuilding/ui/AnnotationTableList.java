@@ -110,7 +110,11 @@ public class AnnotationTableList extends ScrollableTableList<Annotation> {
 		for(final Annotation a : set) {
 			GUITextOverlayTable type = cell(label(a.type.name()));
 			GUITextOverlayTable text = cell(describe(a));
-			GUITextOverlayTable layer = cell(safe(a.layer));
+			//mark layer-hidden rows, otherwise an annotation that is not drawn looks
+			//identical here to one that is
+			GUITextOverlayTable layer = cell(store.isLayerHidden(a.layer)
+					? safe(a.layer) + " (hidden)"
+					: safe(a.layer));
 			GUITextOverlayTable pos = cell(position(a));
 
 			AnnotationRow row = new AnnotationRow(getState(), a, type, text, layer, pos);
@@ -126,7 +130,7 @@ public class AnnotationTableList extends ScrollableTableList<Annotation> {
 	}
 
 	private GUIHorizontalButtonTablePane buttonPane(final Annotation a, GUIAncor anchor) {
-		GUIHorizontalButtonTablePane pane = new GUIHorizontalButtonTablePane(getState(), 5, 1, anchor);
+		GUIHorizontalButtonTablePane pane = new GUIHorizontalButtonTablePane(getState(), 6, 1, anchor);
 		pane.onInit();
 
 		pane.addButton(0, 0, "EDIT TEXT", HButtonColor.BLUE, new GUICallback() {
@@ -179,13 +183,36 @@ public class AnnotationTableList extends ScrollableTableList<Annotation> {
 					}
 				}, null);
 
-		pane.addButton(3, 0, "LOCATE", HButtonColor.GREEN, new GUICallback() {
+		pane.addButton(3, 0, "LAYER", HButtonColor.BLUE, new GUICallback() {
 			@Override
 			public void callback(GUIElement element, MouseEvent event) {
 				if(event.pressedLeftMouse()) {
-					//a hidden annotation cannot flash, so make it visible first
+					editLayer(a);
+				}
+			}
+
+			@Override
+			public boolean isOccluded() {
+				return false;
+			}
+		}, null);
+
+		pane.addButton(4, 0, "LOCATE", HButtonColor.GREEN, new GUICallback() {
+			@Override
+			public void callback(GUIElement element, MouseEvent event) {
+				if(event.pressedLeftMouse()) {
+					//an annotation that is not drawn cannot flash, so clear whatever is
+					//suppressing it first - its own flag, or its whole layer
+					boolean changed = false;
 					if(a.visibility == Annotation.Visibility.HIDDEN) {
 						a.visibility = Annotation.Visibility.ALWAYS;
+						changed = true;
+					}
+					if(store.isLayerHidden(a.layer)) {
+						store.setLayerHidden(a.layer, false);
+						changed = true;
+					}
+					if(changed) {
 						store.save();
 						redrawList();
 					}
@@ -199,7 +226,7 @@ public class AnnotationTableList extends ScrollableTableList<Annotation> {
 			}
 		}, null);
 
-		pane.addButton(4, 0, "DELETE", HButtonColor.RED, new GUICallback() {
+		pane.addButton(5, 0, "DELETE", HButtonColor.RED, new GUICallback() {
 			@Override
 			public void callback(GUIElement element, MouseEvent event) {
 				if(event.pressedLeftMouse()) {
@@ -215,6 +242,21 @@ public class AnnotationTableList extends ScrollableTableList<Annotation> {
 		}, null);
 
 		return pane;
+	}
+
+	private void editLayer(final Annotation a) {
+		new SimplePlayerTextInput("Move to layer", "Layer name") {
+			@Override
+			public boolean onInput(String input) {
+				if(input == null || input.trim().isEmpty()) {
+					return false;
+				}
+				a.layer = input.trim();
+				store.save();
+				redrawList();
+				return true;
+			}
+		};
 	}
 
 	private void editText(final Annotation a) {
