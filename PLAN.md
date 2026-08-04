@@ -314,11 +314,31 @@ Necessary the moment a real ship accumulates more than a dozen annotations.
 
 ### Phase 3 — Regions & measurement
 
+- [ ] **Area selection — subclass `BuildSelection`, do not invent a control scheme.**
+      The copy-area tool already has the right interaction and it is an abstract base built
+      to be extended (`org/schema/game/client/controller/manager/ingame/BuildSelection.java`,
+      with `BuildSelectionCopy` as the reference implementation).
+
+      What it gives us: raycast to the targeted block, first click sets `selectionBoxA`,
+      second sets `selectionBoxB` and fires `callback`, live wireframe preview in between,
+      and it honours `EngineSettings.C_MOUSE_BUTTON_SWITCH` so the mouse button matches the
+      player's own setting.
+
+      To use it: subclass `BuildSelection`, implement `callback(pim, e)` to create the
+      annotation from `selectionBoxA`/`selectionBoxB`, return `DrawStyle.BOX` from
+      `getDrawStyle()`, `false` from `isSingleSelect()`, and activate with
+      `buildToolsManager.setSelectMode(...)`. `PlayerInteractionControlManager:1735` drives
+      the mouse events for whatever mode is set.
+
+      **This should also retrofit the existing dimension flow.** "Dim Start" / "Dim End"
+      are two button presses with no preview because that was the only thing available from
+      a panel button; a `BuildSelection` subclass gives the same two picks with a live box
+      and no round trip to the panel between them. "Dim Box", which reads whatever selection
+      already exists, becomes redundant once the mod can drive its own.
 - [ ] **Region label** — text anchored to a box volume, floating at its centroid
 - [ ] **Named zones** — wireframe box with name and color, optional low-alpha fill
 - [ ] **Bounding-box dimension** — 3-axis width × height × depth callout on a selection
 - [ ] **Clearance/keepout volumes** — warn when blocks are placed inside
-- [ ] Hook `BuildSelection.selectionBoxA/B` so the existing selection can seed a region
 - [ ] **Axis rulers / gridlines** — tick marks along an entity axis
 - [ ] **Reference planes and axes** — persistent user-placed guides beyond the built-in
       symmetry plane
