@@ -136,23 +136,31 @@ public class AnnotationLabelOverlay extends GUIElement {
 	private String caption(Annotation a) {
 		switch(a.type) {
 			case DIMENSION:
-				float blocks = AnnotationGeometry.measureBlocks(a);
-				if(blocks < 0) {
+				String measured = measurement(a);
+				if(measured.isEmpty()) {
 					return a.text == null ? "" : a.text;
 				}
-				String measured = formatBlocks(blocks);
 				return a.text == null || a.text.isEmpty() ? measured : a.text + ": " + measured;
 			default:
 				return a.text == null ? "" : a.text;
 		}
 	}
 
-	private String formatBlocks(float blocks) {
-		//whole numbers are the common case (axis-aligned measurements); avoid "5.0m"
-		if(Math.abs(blocks - Math.round(blocks)) < 0.01f) {
-			return Math.round(blocks) + "m";
+	/**
+	 * Axis-aligned measurements report the inclusive block count, which is what a builder
+	 * is actually asking ("how many blocks is this run?"). Diagonals have no meaningful
+	 * block count, so they report centre-to-centre distance instead.
+	 */
+	private String measurement(Annotation a) {
+		float distance = AnnotationGeometry.measureBlocks(a);
+		if(distance < 0) {
+			return "";
 		}
-		return String.format("%.1fm", blocks);
+		int span = AnnotationGeometry.spanBlocks(a);
+		if(span >= 0) {
+			return span + (span == 1 ? " block" : " blocks");
+		}
+		return String.format("%.1fm", distance);
 	}
 
 	private WorldToScreenConverter converter() {

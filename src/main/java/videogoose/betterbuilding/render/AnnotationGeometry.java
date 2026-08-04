@@ -56,9 +56,10 @@ public final class AnnotationGeometry {
 	}
 
 	/**
-	 * Length of a dimension annotation in blocks. Anchors are stored in block units, so
-	 * this is measured in anchor space rather than world space and is therefore unaffected
-	 * by the entity's transform.
+	 * Centre-to-centre distance between a dimension's two anchors, in blocks. Anchors are
+	 * stored in block units and a block is one world unit ({@code Element.BLOCK_SIZE == 1}),
+	 * so this is both the block distance and the length of the drawn line, and is
+	 * unaffected by the entity's transform.
 	 *
 	 * @return the distance, or -1 if this is not a two-anchor annotation
 	 */
@@ -70,5 +71,39 @@ public final class AnnotationGeometry {
 		float dy = a.anchorB.y - a.anchor.y;
 		float dz = a.anchorB.z - a.anchor.z;
 		return (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+	}
+
+	/** True when the two anchors differ along at most one axis. */
+	public static boolean isAxisAligned(Annotation a) {
+		if(a.anchor == null || a.anchorB == null) {
+			return false;
+		}
+		int differing = 0;
+		if(differs(a.anchor.x, a.anchorB.x)) differing++;
+		if(differs(a.anchor.y, a.anchorB.y)) differing++;
+		if(differs(a.anchor.z, a.anchorB.z)) differing++;
+		return differing <= 1;
+	}
+
+	/**
+	 * Number of blocks an axis-aligned dimension covers, counting both end blocks.
+	 * <p>
+	 * This is deliberately not the same as {@link #measureBlocks}: picking the blocks at
+	 * x=0 and x=4 gives a centre-to-centre distance of 4, but covers 5 blocks. When a
+	 * builder measures a hull run they are asking how many blocks it takes to build, so
+	 * the inclusive count is the useful answer. Only well defined when the anchors are
+	 * axis-aligned, which is why a diagonal measurement falls back to reporting distance.
+	 *
+	 * @return the inclusive block count, or -1 if not applicable
+	 */
+	public static int spanBlocks(Annotation a) {
+		if(!isAxisAligned(a)) {
+			return -1;
+		}
+		return Math.round(measureBlocks(a)) + 1;
+	}
+
+	private static boolean differs(float a, float b) {
+		return Math.abs(a - b) > 0.001f;
 	}
 }

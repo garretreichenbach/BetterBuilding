@@ -38,6 +38,13 @@ public class AnnotationGeometryDrawer extends ModWorldDrawer {
 	private final Vector4f color = new Vector4f();
 	private final Vector3f camDelta = new Vector3f();
 
+	//scratch for dimension end ticks; reused so the draw loop allocates nothing per frame
+	private final Vector3f tickAxis = new Vector3f();
+	private final Vector3f tickSeed = new Vector3f();
+	private final Vector3f tickPerp = new Vector3f();
+	private final Vector3f tickA = new Vector3f();
+	private final Vector3f tickB = new Vector3f();
+
 	/** Half-length of the tick marks drawn at each end of a dimension line, in metres. */
 	private static final float TICK_HALF_LENGTH = 0.5f;
 
@@ -123,33 +130,32 @@ public class AnnotationGeometryDrawer extends ModWorldDrawer {
 	 * reads unambiguously against the geometry behind it.
 	 */
 	private void endTicks(Vector3f from, Vector3f to, Vector4f c) {
-		Vector3f axis = new Vector3f(to);
-		axis.sub(from);
-		if(axis.lengthSquared() < 1.0e-6f) {
+		tickAxis.set(to);
+		tickAxis.sub(from);
+		if(tickAxis.lengthSquared() < 1.0e-6f) {
 			return;
 		}
-		axis.normalize();
+		tickAxis.normalize();
 
 		//any vector not parallel to the axis works as a seed for the perpendicular
-		Vector3f seed = Math.abs(axis.y) > 0.9f ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0);
-		Vector3f perp = new Vector3f();
-		perp.cross(axis, seed);
-		if(perp.lengthSquared() < 1.0e-6f) {
+		tickSeed.set(Math.abs(tickAxis.y) > 0.9f ? 1 : 0, Math.abs(tickAxis.y) > 0.9f ? 0 : 1, 0);
+		tickPerp.cross(tickAxis, tickSeed);
+		if(tickPerp.lengthSquared() < 1.0e-6f) {
 			return;
 		}
-		perp.normalize();
-		perp.scale(TICK_HALF_LENGTH);
+		tickPerp.normalize();
+		tickPerp.scale(TICK_HALF_LENGTH);
 
-		tick(from, perp, c);
-		tick(to, perp, c);
+		tick(from, c);
+		tick(to, c);
 	}
 
-	private void tick(Vector3f at, Vector3f perp, Vector4f c) {
-		Vector3f a = new Vector3f(at);
-		Vector3f b = new Vector3f(at);
-		a.sub(perp);
-		b.add(perp);
-		line(a, b, c);
+	private void tick(Vector3f at, Vector4f c) {
+		tickA.set(at);
+		tickA.sub(tickPerp);
+		tickB.set(at);
+		tickB.add(tickPerp);
+		line(tickA, tickB, c);
 	}
 
 	private void line(Vector3f from, Vector3f to, Vector4f c) {
