@@ -10,6 +10,7 @@ import api.listener.events.gui.AdvancedBuildModeGUICreateEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
 import videogoose.betterbuilding.annotation.AnnotationStore;
+import videogoose.betterbuilding.io.AnnotationIO;
 
 /**
  * Adds the annotation section to the advanced build mode panel.
@@ -24,10 +25,12 @@ public class AnnotationPanelRegistrar {
 
 	private final StarMod mod;
 	private final AnnotationStore store;
+	private final AnnotationIO io;
 
-	public AnnotationPanelRegistrar(StarMod mod, AnnotationStore store) {
+	public AnnotationPanelRegistrar(StarMod mod, AnnotationStore store, AnnotationIO io) {
 		this.mod = mod;
 		this.store = store;
+		this.io = io;
 	}
 
 	public void register() {
@@ -56,7 +59,7 @@ public class AnnotationPanelRegistrar {
 				return; //already added; the panel can be rebuilt
 			}
 		}
-		AnnotationBuildModeGroup group = new AnnotationBuildModeGroup(owner, store);
+		AnnotationBuildModeGroup group = new AnnotationBuildModeGroup(owner, store, io);
 		event.getGroups().add(group);
 		if(group.isHidden()) {
 			return;

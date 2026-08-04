@@ -1,6 +1,7 @@
 package videogoose.betterbuilding.annotation;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -141,6 +142,36 @@ public class AnnotationStore {
 		}
 		index(a);
 		PersistentObjectUtil.addObject(mod.getSkeleton(), a);
+		save();
+	}
+
+	/**
+	 * Bulk add that persists once at the end rather than once per annotation. Importing a
+	 * large set through {@link #add} would rewrite the whole store file per entry.
+	 */
+	public void addAll(Collection<Annotation> annotations) {
+		for(Annotation a : annotations) {
+			if(a.getEntityKey() == null) {
+				continue;
+			}
+			index(a);
+			PersistentObjectUtil.addObject(mod.getSkeleton(), a);
+		}
+		save();
+	}
+
+	/** Bulk remove, persisting once. See {@link #addAll}. */
+	public void removeAll(Collection<Annotation> annotations) {
+		for(Annotation a : annotations) {
+			List<Annotation> list = byEntity.get(a.getEntityKey());
+			if(list != null) {
+				list.remove(a);
+				if(list.isEmpty()) {
+					byEntity.remove(a.getEntityKey());
+				}
+			}
+			PersistentObjectUtil.removeObject(mod.getSkeleton(), a);
+		}
 		save();
 	}
 

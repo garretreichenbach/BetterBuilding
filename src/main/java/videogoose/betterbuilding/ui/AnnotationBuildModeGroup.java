@@ -1,7 +1,14 @@
 package videogoose.betterbuilding.ui;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.io.File;
+import java.io.IOException;
+
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.controller.manager.ingame.BuildSelection;
+import api.utils.gui.SimplePlayerTextInput;
 import org.schema.game.client.view.gui.advanced.AdvancedGUIElement;
 import org.schema.game.client.view.gui.advanced.tools.ButtonCallback;
 import org.schema.game.client.view.gui.advanced.tools.ButtonResult;
@@ -20,6 +27,9 @@ import videogoose.betterbuilding.annotation.Anchor;
 import videogoose.betterbuilding.annotation.Annotation;
 import videogoose.betterbuilding.annotation.AnnotationStore;
 import videogoose.betterbuilding.annotation.LabelSize;
+import videogoose.betterbuilding.io.AnnotationFile;
+import videogoose.betterbuilding.io.AnnotationIO;
+import videogoose.betterbuilding.io.ImportMode;
 
 /**
  * The "Annotations" section of the advanced build mode panel: the primary interface for
@@ -32,6 +42,7 @@ import videogoose.betterbuilding.annotation.LabelSize;
 public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 
 	private final AnnotationStore store;
+	private final AnnotationIO io;
 
 	private GUIAdvTextBar textBar;
 	private GUIAdvTextBar layerBar;
@@ -49,9 +60,10 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 	 */
 	private Anchor pendingA;
 
-	public AnnotationBuildModeGroup(AdvancedGUIElement e, AnnotationStore store) {
+	public AnnotationBuildModeGroup(AdvancedGUIElement e, AnnotationStore store, AnnotationIO io) {
 		super(e);
 		this.store = store;
+		this.io = io;
 	}
 
 	@Override
@@ -76,11 +88,13 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 		pane.addNewTextBox(30);
 		pane.addNewTextBox(30);
 		pane.addNewTextBox(30);
+		pane.addNewTextBox(30);
 
 		buildTextEntry(pane);
 		buildSizeAndCreate(pane);
 		buildDimension(pane);
 		buildStatus(pane);
+		buildTransfer(pane);
 	}
 
 	private void buildDimension(GUIContentPane pane) {
@@ -574,6 +588,74 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 		return anchor;
 	}
 
+	private void buildTransfer(GUIContentPane pane) {
+		addButton(pane.getContent(0, 4), 0, 0, new ButtonResult() {
+			@Override
+			public HButtonColor getColor() {
+				return HButtonColor.BLUE;
+			}
+
+			@Override
+			public ButtonCallback initCallback() {
+				return new ButtonCallback() {
+					@Override
+					public void pressedLeftMouse() {
+						exportToFile();
+					}
+
+					@Override
+					public void pressedRightMouse() {
+						exportToClipboard();
+					}
+				};
+			}
+
+			@Override
+			public String getName() {
+				return "Export...";
+			}
+
+			@Override
+			public String getToolTipText() {
+				return "Left click: write this entity's annotations to a file.\n"
+						+ "Right click: copy them to the clipboard instead.";
+			}
+		});
+
+		addButton(pane.getContent(0, 4), 1, 0, new ButtonResult() {
+			@Override
+			public HButtonColor getColor() {
+				return HButtonColor.BLUE;
+			}
+
+			@Override
+			public ButtonCallback initCallback() {
+				return new ButtonCallback() {
+					@Override
+					public void pressedLeftMouse() {
+						openImport();
+					}
+
+					@Override
+					public void pressedRightMouse() {
+						importFromClipboard();
+					}
+				};
+			}
+
+			@Override
+			public String getName() {
+				return "Import...";
+			}
+
+			@Override
+			public String getToolTipText() {
+				return "Left click: choose a file to import.\n"
+						+ "Right click: import from the clipboard instead.";
+			}
+		});
+	}
+
 	private void openLayers() {
 		SegmentController c = currentEntity();
 		if(c == null || c.getUniqueIdentifier() == null) {
@@ -582,6 +664,84 @@ public class AnnotationBuildModeGroup extends AdvancedBuildModeGUISGroup {
 		}
 		new LayerListDialog(store, c.getUniqueIdentifier()).activate();
 		status = "";
+	}
+
+	private void exportToFile() {
+		final SegmentController c = currentEntity();
+		if(c == null || c.getUniqueIdentifier() == null) {
+			status = "no entity";
+			return;
+		}
+		if(store.forEntity(c.getUniqueIdentifier()).isEmpty()) {
+			status = "nothing to export";
+			return;
+		}
+		final String suggested = c.getRealName() != null ? c.getRealName() : "annotations";
+		new SimplePlayerTextInput("Export annotations", "File name (" + suggested + ")") {
+			@Override
+			public boolean onInput(String name) {
+				String chosen = name == null || name.trim().isEmpty() ? suggested : name.trim();
+				try {
+					File written = io.export(c, null, chosen);
+					status = "exported to " + written.getName();
+				} catch(IOException e) {
+					e.printStackTrace();
+					status = "export failed: " + e.getMessage();
+				}
+				return true;
+			}
+		};
+	}
+
+	private void exportToClipboard() {
+		SegmentController c = currentEntity();
+		if(c == null || c.getUniqueIdentifier() == null) {
+			status = "no entity";
+			return;
+		}
+		if(store.forEntity(c.getUniqueIdentifier()).isEmpty()) {
+			status = "nothing to export";
+			return;
+		}
+		String json = io.toJson(io.buildFile(c, null));
+		StringSelection selection = new StringSelection(json);
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+		status = "copied to clipboard";
+	}
+
+	private void openImport() {
+		SegmentController c = currentEntity();
+		if(c == null || c.getUniqueIdentifier() == null) {
+			status = "no entity";
+			return;
+		}
+		new ImportDialog(io, c).activate();
+		status = "";
+	}
+
+	private void importFromClipboard() {
+		SegmentController c = currentEntity();
+		if(c == null || c.getUniqueIdentifier() == null) {
+			status = "no entity";
+			return;
+		}
+		try {
+			Object contents = Toolkit.getDefaultToolkit().getSystemClipboard()
+					.getData(DataFlavor.stringFlavor);
+			if(!(contents instanceof String)) {
+				status = "clipboard has no text";
+				return;
+			}
+			AnnotationFile file = io.parse((String) contents);
+			if(file == null) {
+				status = "clipboard is not an annotation file";
+				return;
+			}
+			//merge rather than replace: pasting should never silently destroy work
+			status = io.apply(file, c, ImportMode.MERGE);
+		} catch(Exception e) {
+			status = "clipboard import failed: " + e.getMessage();
+		}
 	}
 
 	private void openList() {

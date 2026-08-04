@@ -7,6 +7,7 @@ import api.listener.events.gui.HudCreateEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
 import videogoose.betterbuilding.annotation.AnnotationStore;
+import videogoose.betterbuilding.io.AnnotationIO;
 import videogoose.betterbuilding.render.AnnotationGeometryDrawer;
 import videogoose.betterbuilding.render.AnnotationLabelOverlay;
 import videogoose.betterbuilding.render.EntityResolver;
@@ -26,6 +27,7 @@ public class BetterBuilding extends StarMod {
 
 	private AnnotationStore store;
 	private EntityResolver entities;
+	private AnnotationIO io;
 
 	public BetterBuilding() {
 	}
@@ -42,6 +44,10 @@ public class BetterBuilding extends StarMod {
 		return entities;
 	}
 
+	public AnnotationIO getIo() {
+		return io;
+	}
+
 	public static void main(String[] args) {
 	}
 
@@ -52,11 +58,12 @@ public class BetterBuilding extends StarMod {
 		store = new AnnotationStore(this);
 		store.load();
 		entities = new EntityResolver();
+		io = new AnnotationIO(this, store);
 
 		registerWorldDrawer();
 		registerHudOverlay();
 
-		new AnnotationPanelRegistrar(this, store).register();
+		new AnnotationPanelRegistrar(this, store, io).register();
 	}
 
 	/** Geometry (leader lines, dimension lines) is drawn in the world pass. */
